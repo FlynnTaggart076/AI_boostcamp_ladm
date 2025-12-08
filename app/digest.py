@@ -3,10 +3,9 @@ import os
 import json
 import requests
 import urllib3
-
-from qwen_agent import extract_text_from_response  # используем уже написанную функцию
+from .qwen_agent import extract_text_from_response
 from config import QWEN_URL, QWEN_TOKEN
-from qwen_agent import extract_text_from_response
+from config import QWEN_URL, QWEN_TOKEN
 
 
 def build_digest(

@@ -1,6 +1,7 @@
 # main.py
 import os
 from app.qwen_agent import parse_daily
+from app.digest import build_digest
 from config import QWEN_URL, QWEN_TOKEN
 
 
@@ -21,9 +22,7 @@ def ask_one_person(name: str) -> dict:
 
 
 def main():
-    # пока список имён захардкожен — потом можно читать из файла/БД/конфига
     team = ["Вася", "Мила", "Саша"]
-
     all_dailies: list[dict] = []
 
     for name in team:
@@ -34,7 +33,11 @@ def main():
     for d in all_dailies:
         print(d)
 
+    # 👇 добавляем вызов дайджеста
+    print("\n=== Дайджест для тимлида ===\n")
+    digest_text = build_digest(all_dailies)   # url и token берутся по умолчанию из config.py
+    print(digest_text)
+
 
 if __name__ == "__main__":
     main()
-
