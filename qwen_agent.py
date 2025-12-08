@@ -84,7 +84,11 @@ def call_qwen(
         'Верни строго один валидный JSON-объект с полями '
         '"yesterday", "today", "blockers", "has_blockers", "critical". '
         "Никакого дополнительного текста.\n"
-        'Если блокеров нет, то "blockers"="", "has_blockers"=false, "critical"=false.\n\n'
+        'Если блокеров нет, то "blockers" = "", "has_blockers" = false, "critical" = false.\n\n'
+        "Если в тексте есть слова \"Блокер\" или \"блокер\", всегда считай текст после этого слова "
+        "(до конца предложения или строки) описанием блокера и заполняй поле \"blockers\". "
+        "В этом случае has_blockers = true. "
+        "Неважно, каким знаком препинания отделено слово \"Блокер\" — точкой, запятой, тире и т.п.\n\n"
         f"Текст разработчика:\n{user_text}\n\n"
         "Ответ:"
     )
@@ -120,6 +124,46 @@ def call_qwen(
     return cleaned.strip()
 
 
+def parse_daily(
+    user_text: str,
+    url: str,
+    api_token: str | None,
+    temperature: float = 0.01,
+    max_new_tokens: int = 256,
+) -> dict:
+    """
+    Обертка над call_qwen:
+    - вызывает модель с текстом daily
+    - парсит строку-JSON в Python-словарь
+    """
+    raw = call_qwen(
+        user_text=user_text,
+        url=url,
+        api_token=api_token,
+        temperature=temperature,
+        max_new_tokens=max_new_tokens,
+    )
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        # если модель вернула невалидный JSON — кидаем понятную ошибку
+        raise ValueError(f"Модель вернула невалидный JSON: {raw!r}")
+
+    # на всякий случай добавим дефолтные поля, чтобы дальше не падать
+    defaults = {
+        "yesterday": "",
+        "today": "",
+        "blockers": "",
+        "has_blockers": False,
+        "critical": False,
+    }
+    for k, v in defaults.items():
+        data.setdefault(k, v)
+
+    return data
+
+
 # --- CLI-обёртка для запуска из PyCharm ---
 
 
@@ -133,14 +177,15 @@ if __name__ == "__main__":
     user_input = input("> ")
 
     try:
-        result = call_qwen(
+        result = parse_daily(
             user_text=user_input,
             url=QWEN_URL,
             api_token=QWEN_TOKEN,
             temperature=0.01,
             max_new_tokens=128,
         )
-        print("\nОтвет модели:")
+        print("\nРазобранный daily (dict):")
         print(result)
     except Exception as e:
         print("Ошибка при вызове Qwen:", e)
+
