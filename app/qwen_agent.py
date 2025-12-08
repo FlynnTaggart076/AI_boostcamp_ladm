@@ -162,30 +162,3 @@ def parse_daily(
         data.setdefault(k, v)
 
     return data
-
-
-# --- CLI-обёртка для запуска из PyCharm ---
-
-
-if __name__ == "__main__":
-    # можно захардкодить, можно вынести в env-переменные
-    QWEN_URL = "https://qwen1.product.nova.neurotech.k2.cloud/"
-    # лучше так: экспортировать QWEN_API_TOKEN в окружение
-    QWEN_TOKEN = os.getenv("QWEN_API_TOKEN", "HLYsERkS69fa05xfII")
-
-    print("Введи текст отчёта разработчика (один абзац).")
-    user_input = input("> ")
-
-    try:
-        result = parse_daily(
-            user_text=user_input,
-            url=QWEN_URL,
-            api_token=QWEN_TOKEN,
-            temperature=0.01,
-            max_new_tokens=128,
-        )
-        print("\nРазобранный daily (dict):")
-        print(result)
-    except Exception as e:
-        print("Ошибка при вызове Qwen:", e)
-

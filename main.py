@@ -1,13 +1,10 @@
-# daily_cli.py
+# main.py
 import os
-from qwen_agent import parse_daily
-
-QWEN_URL = "https://qwen1.product.nova.neurotech.k2.cloud/"
-QWEN_TOKEN = os.getenv("QWEN_API_TOKEN", "HLYsERkS69fa05xfII")
+from app.qwen_agent import parse_daily
+from config import QWEN_URL, QWEN_TOKEN
 
 
 def ask_one_person(name: str) -> dict:
-    """Спрашиваем одного человека и возвращаем разобранный daily-словарь."""
     print(f"\n=== Daily для {name} ===")
     print("Напиши одним абзацем: что делал вчера / что делаешь сегодня / какие блокеры.")
     text = input("> ")
@@ -19,7 +16,7 @@ def ask_one_person(name: str) -> dict:
         temperature=0.01,
         max_new_tokens=128,
     )
-    daily["name"] = name  # добавим имя, пригодится для дайджеста
+    daily["name"] = name
     return daily
 
 
