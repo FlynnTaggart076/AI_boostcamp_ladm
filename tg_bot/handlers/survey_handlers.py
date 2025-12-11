@@ -1,0 +1,499 @@
+from telegram import Update
+from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
+from database.models import SurveyModel, ResponseModel, UserModel
+from datetime import datetime, timedelta
+import re
+from config.constants import (
+    AWAITING_SURVEY_QUESTION,
+    AWAITING_SURVEY_ROLE,
+    AWAITING_SURVEY_TIME,
+    AWAITING_SURVEY_SELECTION,
+    AWAITING_SURVEY_RESPONSE
+)
+
+async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка вопроса для опроса"""
+    question = update.message.text.strip()
+
+    if len(question) < 5:
+        await update.message.reply_text(
+            "Вопрос должен содержать минимум 5 символов. Попробуйте снова:"
+        )
+        return AWAITING_SURVEY_QUESTION
+
+    context.user_data['survey_question'] = question
+
+    await update.message.reply_text(
+        "Вопрос сохранен!\n\n"
+        "Шаг 2 из 3: Кому отправить опрос?\n\n"
+        "Введите:\n"
+        "• 'all' - всем пользователям\n"
+        "• 'ceo' - только руководителям\n"
+        "• 'worker' - только рабочим\n"
+        "• Или конкретную роль: team_lead, project_manager, department_head, senior_worker, specialist\n\n"
+        "Пример: 'all' или 'worker'\n"
+        "Используйте /cancel для отмены."
+    )
+
+    return AWAITING_SURVEY_ROLE
+
+async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отмена ответа на опрос"""
+    # Очищаем данные
+    for key in ['current_survey_id', 'current_survey_question',
+                'current_survey_datetime', 'awaiting_survey_response',
+                'available_surveys', 'awaiting_survey_selection']:
+        context.user_data.pop(key, None)
+
+    await update.message.reply_text(
+        "Survey response cancelled."
+    )
+
+    return ConversationHandler.END
+
+
+async def sendsurvey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Начало создания опроса"""
+    # Проверяем, что пользователь CEO
+    user_role = context.user_data.get('user_role')
+    if user_role != 'CEO':
+        await update.message.reply_text(
+            "Только руководители (CEO) могут создавать опросы."
+        )
+        return ConversationHandler.END
+
+    await update.message.reply_text(
+        "Создание нового опроса\n\n"
+        "Шаг 1 из 3: Введите вопрос для опроса:\n\n"
+        "Пример: 'Что вы сделали сегодня?'\n"
+        "Или: 'Какие проблемы возникли за неделю?'\n\n"
+        "Используйте /cancel для отмены."
+    )
+
+    context.user_data['creating_survey'] = True
+    return AWAITING_SURVEY_QUESTION
+
+
+async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка ответа на опрос"""
+    # Проверяем, что пользователь действительно отвечает на опрос
+    if not context.user_data.get('awaiting_survey_response'):
+        # Если не в режиме ответа, игнорируем
+        return
+
+    if not context.user_data.get('current_survey_id'):
+        await update.message.reply_text(
+            "Error: No active survey for response. Use /response to start."
+        )
+        # Сбрасываем флаг
+        context.user_data.pop('awaiting_survey_response', None)
+        return ConversationHandler.END
+
+    response_text = update.message.text.strip()
+
+    if len(response_text) < 3:
+        await update.message.reply_text(
+            "Answer must contain at least 3 characters. Try again:"
+        )
+        return AWAITING_SURVEY_RESPONSE
+
+    # Получаем информацию об опросе
+    survey_id = context.user_data['current_survey_id']
+    question = context.user_data.get('current_survey_question', 'No question')
+    survey_date = context.user_data.get('current_survey_datetime')
+
+    # Сохраняем ответ в БД
+    response_data = {
+        'id_survey': survey_id,
+        'id_user': context.user_data['user_id'],
+        'answer': response_text
+    }
+
+    response_id = ResponseModel.save_response(response_data)
+
+    if response_id:
+        # Форматируем дату для сообщения
+        date_str = ""
+        if survey_date:
+            if isinstance(survey_date, datetime):
+                date_str = f"\nSurvey date: {survey_date.strftime('%d.%m.%Y %H:%M')}"
+            else:
+                date_str = f"\nSurvey date: {survey_date}"
+
+        await update.message.reply_text(
+            f"Your answer has been saved!\n"
+            f"📋Survey #{survey_id}\n"
+            f"Question: {question[:100]}...{date_str}"
+        )
+    else:
+        await update.message.reply_text(
+            "Error saving answer. Please try again later."
+        )
+
+    # Очищаем данные
+    for key in ['current_survey_id', 'current_survey_question',
+                'current_survey_datetime', 'awaiting_survey_response',
+                'available_surveys', 'awaiting_survey_selection']:
+        context.user_data.pop(key, None)
+
+    return ConversationHandler.END
+
+
+async def handle_survey_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка роли получателей"""
+    role_input = update.message.text.strip().lower()
+    # Определяем роль для БД
+    if role_input == 'all':
+        role_for_db = None  # В БД NULL означает "для всех"
+        role_display = 'all users'
+    elif role_input == 'ceo':
+        role_for_db = 'CEO'  # Всегда заглавными в БД
+        role_display = 'CEOs (managers)'
+    else:
+        # Для остальных ролей оставляем как есть (строчными)
+        role_for_db = role_input
+        # Формируем отображаемое имя
+        role_display_map = {
+            'worker': 'workers',
+            'team_lead': 'team leads',
+            'project_manager': 'project managers',
+            'department_head': 'department heads',
+            'senior_worker': 'senior workers',
+            'specialist': 'specialists'
+        }
+        role_display = role_display_map.get(role_input, role_input)
+
+    # Проверяем, есть ли пользователи с этой ролью (кроме 'all')
+    if role_for_db:
+        users = UserModel.get_users_by_role(role_for_db)
+        if not users:
+            await update.message.reply_text(
+                f"Нет пользователей с ролью '{role_input}' с привязанными Telegram аккаунтами.\n"
+                "Выберите другую роль:"
+            )
+            return AWAITING_SURVEY_ROLE
+        target_users_count = len(users)
+    else:
+        # Для 'all' считаем всех пользователей с Telegram
+        users_worker = UserModel.get_users_by_role('worker')
+        users_ceo = UserModel.get_users_by_role('CEO')
+        target_users_count = len(users_worker) + len(users_ceo)
+
+        if target_users_count == 0:
+            await update.message.reply_text(
+                "Нет пользователей с привязанными Telegram аккаунтами.\n"
+                "Сначала зарегистрируйте пользователей."
+            )
+            return AWAITING_SURVEY_ROLE
+
+    context.user_data['survey_role'] = role_for_db
+    context.user_data['survey_role_display'] = role_display
+    context.user_data['target_users_count'] = target_users_count
+
+    await update.message.reply_text(
+        f"Опрос будет отправлен {target_users_count} пользователям ({role_display}).\n\n"
+        "Шаг 3 из 3: Когда отправить опрос?\n\n"
+        "Введите дату и время в формате:\n"
+        "• 'сегодня 14:30' - сегодня в 14:30\n"
+        "• 'завтра 09:00' - завтра в 9 утра\n"
+        "• '2024-01-20 18:00' - конкретная дата\n"
+        "• 'сейчас' - отправить немедленно\n\n"
+        "Пример: 'завтра 10:00'\n"
+        "Используйте /cancel для отмены."
+    )
+
+    return AWAITING_SURVEY_TIME
+
+
+async def handle_survey_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка времени отправки"""
+    time_input = update.message.text.strip().lower()
+
+    now = datetime.now()
+    survey_datetime = None
+
+    try:
+        if time_input == 'сейчас':
+            survey_datetime = now + timedelta(seconds=10)  # Через 10 секунд для теста
+            schedule_type = "немедленно"
+        elif time_input.startswith('сегодня'):
+            time_match = re.search(r'(\d{1,2}):(\d{2})', time_input)
+            if time_match:
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2))
+                survey_datetime = datetime(now.year, now.month, now.day, hour, minute)
+                schedule_type = "сегодня"
+            else:
+                raise ValueError("Неверный формат времени")
+        elif time_input.startswith('завтра'):
+            time_match = re.search(r'(\d{1,2}):(\d{2})', time_input)
+            if time_match:
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2))
+                tomorrow = now + timedelta(days=1)
+                survey_datetime = datetime(tomorrow.year, tomorrow.month, tomorrow.day, hour, minute)
+                schedule_type = "завтра"
+            else:
+                raise ValueError("Неверный формат времени")
+        else:
+            # Пытаемся распарсить как полную дату
+            try:
+                survey_datetime = datetime.strptime(time_input, '%Y-%m-%d %H:%M')
+                schedule_type = "по расписанию"
+            except ValueError:
+                try:
+                    survey_datetime = datetime.strptime(time_input, '%d.%m.%Y %H:%M')
+                    schedule_type = "по расписанию"
+                except ValueError:
+                    raise ValueError("Неверный формат даты")
+
+        # Проверяем, что время не в прошлом (кроме "сейчас")
+        if time_input != 'сейчас' and survey_datetime < now:
+            await update.message.reply_text(
+                "Время отправки не может быть в прошлом.\n"
+                "Попробуйте снова:"
+            )
+            return AWAITING_SURVEY_TIME
+
+        # Сохраняем в контекст
+        context.user_data['survey_datetime'] = survey_datetime
+        context.user_data['schedule_type'] = schedule_type
+
+        # Создаем опрос в БД
+        return await create_survey_in_db(update, context)
+
+    except Exception as e:
+        await update.message.reply_text(
+            f"Ошибка распознавания времени: {str(e)}\n"
+            "Попробуйте снова в формате:\n"
+            "• 'сегодня 14:30'\n"
+            "• 'завтра 09:00'\n"
+            "• '2024-01-20 18:00'\n"
+            "• 'сейчас'"
+        )
+        return AWAITING_SURVEY_TIME
+
+
+async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Создание опроса в БД"""
+    # Формируем данные для опроса
+    survey_data = {
+        'datetime': context.user_data['survey_datetime'],
+        'question': context.user_data['survey_question'],
+        'role': context.user_data['survey_role'],
+        'state': 'active'
+    }
+
+    # Создаем опрос в БД
+    survey_id = SurveyModel.create_survey(survey_data)
+
+    if survey_id:
+        # Формируем информационное сообщение
+        role_display = context.user_data['survey_role_display']
+        users_count = context.user_data['target_users_count']
+        schedule_time = context.user_data['survey_datetime'].strftime('%d.%m.%Y %H:%M')
+        schedule_type = context.user_data['schedule_type']
+
+        await update.message.reply_text(
+            f"Опрос успешно создан!\n\n"
+            f"ID опроса: {survey_id}\n"
+            f"Вопрос: {context.user_data['survey_question']}\n"
+            f"Получатели: {role_display} ({users_count} чел.)\n"
+            f"Отправка: {schedule_time} ({schedule_type})\n\n"
+            f"Опрос будет отправлен автоматически в указанное время."
+        )
+
+        # Добавляем опрос в планировщик через bot_data
+        if hasattr(context, 'bot_data') and 'survey_scheduler' in context.bot_data:
+            survey_scheduler = context.bot_data['survey_scheduler']
+            await survey_scheduler.add_new_survey(survey_id, context.user_data['survey_datetime'])
+
+            # Если отправка "немедленно", отправляем опрос сейчас
+            if context.user_data['schedule_type'] == "немедленно":
+                await survey_scheduler.send_survey_now(survey_id)
+        else:
+            # Fallback: если планировщик не доступен, логируем
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Survey scheduler not available in bot_data for survey {survey_id}")
+
+    else:
+        await update.message.reply_text(
+            "Ошибка при создании опроса. Попробуйте снова позже."
+        )
+
+    # Очищаем данные
+    for key in ['creating_survey', 'survey_question', 'survey_role',
+                'survey_role_display', 'survey_datetime', 'target_users_count',
+                'schedule_type']:
+        context.user_data.pop(key, None)
+
+    return ConversationHandler.END
+
+
+async def send_survey_to_users(update: Update, context: ContextTypes.DEFAULT_TYPE, survey_id: int):
+    """Отправка опроса пользователям"""
+    # Получаем опрос из БД
+    # Здесь должна быть логика получения пользователей по роли и отправки им сообщений
+    # Пока просто сообщим, что опрос создан
+
+    await update.message.reply_text(
+        f"📨 Опрос #{survey_id} отправлен пользователям!"
+    )
+
+
+async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Начало ответа на опрос (для рабочих и CEO для отладки)"""
+    user_id = context.user_data.get('user_id')
+    user_role = context.user_data.get('user_role')
+
+    # РАЗРЕШАЕМ CEO ТОЖЕ ОТВЕЧАТЬ ДЛЯ ОТЛАДКИ
+    if user_role not in ['worker', 'CEO', 'team_lead', 'project_manager', 'department_head', 'senior_worker',
+                         'specialist']:
+        await update.message.reply_text(
+            "Only workers and managers can respond to surveys."
+        )
+        return
+
+    # Получаем активные опросы для этой роли или для всех
+    # 1. Опросы для конкретной роли пользователя
+    active_surveys_for_role = SurveyModel.get_surveys_for_role(user_role)
+
+    # 2. Опросы для всех (role = NULL)
+    active_surveys_for_all = SurveyModel.get_surveys_for_role(None)
+
+    # Объединяем опросы
+    all_active_surveys = active_surveys_for_role + active_surveys_for_all
+
+    if not all_active_surveys:
+        await update.message.reply_text(
+            "📭 No active surveys available for response."
+        )
+        return
+
+    # Фильтруем опросы, на которые пользователь еще не отвечал
+    unanswered_surveys = []
+    for survey in all_active_surveys:
+        existing_response = ResponseModel.get_user_response(survey['id_survey'], user_id)
+        if not existing_response:
+            unanswered_surveys.append(survey)
+
+    if not unanswered_surveys:
+        await update.message.reply_text(
+            "You have already answered all available surveys."
+        )
+        return
+
+    # Сохраняем список доступных опросов
+    context.user_data['available_surveys'] = unanswered_surveys
+    context.user_data['awaiting_survey_selection'] = True
+
+    # Формируем сообщение со списком опросов
+    message = "Available surveys:\n\n"
+    for i, survey in enumerate(unanswered_surveys, 1):
+        # Определяем, для кого опрос
+        target = survey['role'] if survey['role'] else "all users"
+        message += (
+            f"{i}. Survey #{survey['id_survey']}\n"
+            f"   Date: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+            f"   Question: {survey['question'][:100]}...\n"
+            f"   For: {target}\n\n"
+        )
+
+    message += "Enter the survey number to respond (e.g., '1'):\n"
+    message += "Or use /cancel to cancel."
+
+    await update.message.reply_text(message)
+
+    return AWAITING_SURVEY_SELECTION
+
+
+async def handle_survey_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка выбора опроса"""
+    selection_text = update.message.text.strip()
+
+    try:
+        selection_num = int(selection_text)
+    except ValueError:
+        await update.message.reply_text(
+            "Please enter a valid number. Try again:"
+        )
+        return AWAITING_SURVEY_SELECTION
+
+    available_surveys = context.user_data.get('available_surveys', [])
+
+    if not 1 <= selection_num <= len(available_surveys):
+        await update.message.reply_text(
+            f"Invalid selection. Please enter a number from 1 to {len(available_surveys)}:"
+        )
+        return AWAITING_SURVEY_SELECTION
+
+    # Получаем выбранный опрос
+    selected_survey = available_surveys[selection_num - 1]
+
+    # Сохраняем информацию об опросе
+    context.user_data['current_survey_id'] = selected_survey['id_survey']
+    context.user_data['current_survey_question'] = selected_survey['question']
+    context.user_data['current_survey_datetime'] = selected_survey['datetime']
+    context.user_data['awaiting_survey_response'] = True
+    context.user_data.pop('available_surveys', None)
+    context.user_data.pop('awaiting_survey_selection', None)
+
+    # Определяем, для кого опрос
+    target = selected_survey['role'] if selected_survey['role'] else "all users"
+
+    await update.message.reply_text(
+        f"Survey #{selected_survey['id_survey']}\n"
+        f"Date: {selected_survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+        f"For: {target}\n\n"
+        f"Question: {selected_survey['question']}\n\n"
+        "Please enter your answer:\n"
+        "(Use /cancel to cancel)"
+    )
+
+    return AWAITING_SURVEY_RESPONSE
+
+
+async def cancel_survey(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отмена создания опроса"""
+    # Очищаем все данные опроса
+    for key in ['creating_survey', 'survey_question', 'survey_role',
+                'survey_role_display', 'survey_datetime', 'target_users_count',
+                'schedule_type', 'current_survey_id', 'current_survey_question',
+                'awaiting_survey_response']:
+        context.user_data.pop(key, None)
+
+    await update.message.reply_text(
+        "Создание опроса отменено."
+    )
+
+    return ConversationHandler.END
+
+
+survey_response_conversation = ConversationHandler(
+    entry_points=[CommandHandler('response', response_command)],
+    states={
+        AWAITING_SURVEY_SELECTION: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_survey_selection)
+        ],
+        AWAITING_SURVEY_RESPONSE: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_survey_response)
+        ],
+    },
+    fallbacks=[CommandHandler('cancel', cancel_survey_response)],
+)
+survey_creation_conversation = ConversationHandler(
+    entry_points=[CommandHandler('sendsurvey', sendsurvey_command)],
+    states={
+        AWAITING_SURVEY_QUESTION: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_survey_question)
+        ],
+        AWAITING_SURVEY_ROLE: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_survey_role)
+        ],
+        AWAITING_SURVEY_TIME: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_survey_time)
+        ],
+    },
+    fallbacks=[CommandHandler('cancel', cancel_survey)],
+)

@@ -1,7 +1,6 @@
 # main.py
-import os
-from app.qwen_agent import parse_daily
-from app.digest import build_digest
+from old.qwen_agent import parse_daily
+from old.digest import build_digest
 from config import QWEN_URL, QWEN_TOKEN
 
 

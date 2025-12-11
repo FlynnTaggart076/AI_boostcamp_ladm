@@ -1,0 +1,120 @@
+-- DROP SCHEMA public CASCADE;
+-- CREATE SCHEMA public;
+
+-- SELECT tablename AS table_name
+-- FROM pg_tables
+-- WHERE schemaname = 'public'
+-- ORDER BY tablename;
+
+-- 1. Таблица: Users (Пользователи)
+CREATE TABLE Users (
+    id_user SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    tg_username VARCHAR(100) UNIQUE NOT NULL,
+    tg_id BIGINT UNIQUE,
+    jira_account VARCHAR(100), -- Логин/email пользователя в Jira
+    role VARCHAR(50) NOT NULL CHECK (role IN ('worker', 'CEO'))
+);
+
+-- 2. Таблица: Surveys (Опросы)
+CREATE TABLE Surveys (
+    id_survey SERIAL PRIMARY KEY,
+    datetime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    question TEXT NOT NULL,
+    role VARCHAR(50), -- 'worker', 'CEO', или NULL для всех
+    state VARCHAR(20) DEFAULT 'active' -- 'active', 'closed'
+);
+
+-- 3. Таблица: Responses (Ответы)
+CREATE TABLE Responses (
+    id_response SERIAL PRIMARY KEY,
+    id_user INTEGER NOT NULL REFERENCES Users(id_user) ON DELETE CASCADE,
+    id_survey INTEGER NOT NULL REFERENCES Surveys(id_survey) ON DELETE CASCADE,
+    answer TEXT NOT NULL,
+    -- один пользователь может ответить на один опрос только один раз
+    UNIQUE(id_user, id_survey)
+);
+
+-- 4. Таблица: Blockers (Блокеры/проблемы)
+CREATE TABLE Blockers (
+    id_blocker SERIAL PRIMARY KEY,
+    id_response INTEGER NOT NULL REFERENCES Responses(id_response) ON DELETE CASCADE,
+    id_user INTEGER NOT NULL REFERENCES Users(id_user) ON DELETE CASCADE,
+    response TEXT,
+    text TEXT NOT NULL,
+    critical BOOLEAN DEFAULT FALSE,
+    has_blockers BOOLEAN DEFAULT TRUE -- есть ли блокеры вообще
+);
+
+-- 5. Таблица: Reports (Отчеты)
+CREATE TABLE Reports (
+    id_report SERIAL PRIMARY KEY,
+    id_blocker INTEGER NOT NULL REFERENCES Blockers(id_blocker) ON DELETE CASCADE,
+    id_user INTEGER NOT NULL REFERENCES Users(id_user) ON DELETE CASCADE,
+    survey TEXT,
+    text TEXT NOT NULL
+);
+
+-- 6. Таблица: Projects (Проекты)
+CREATE TABLE Projects (
+    id_project SERIAL PRIMARY KEY,
+    BIO TEXT,
+    jira_account VARCHAR(100) NOT NULL -- Ключ проекта в Jira (например: 'PROJ', 'MOBAPP')
+);
+
+-- 7. Таблица: Sprints (Спринты)
+CREATE TABLE Sprints (
+    id_sprint SERIAL PRIMARY KEY,
+    jira_account VARCHAR(100) NOT NULL, -- ID спринта в Jira (например: '25', 'Sprint-15')
+    sprint_name VARCHAR(200) NOT NULL,
+    BIO TEXT,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'closed')),
+    start_date DATE NOT NULL,
+    finish_date DATE NOT NULL,
+    CHECK (finish_date >= start_date)
+);
+
+-- 8. Таблица: Tasks (Задачи)
+CREATE TABLE Tasks (
+    id_task SERIAL PRIMARY KEY,
+    id_project INTEGER NOT NULL REFERENCES Projects(id_project) ON DELETE CASCADE,
+    BIO TEXT,
+    "user" INTEGER NOT NULL REFERENCES Users(id_user) ON DELETE CASCADE
+);
+
+-- 9. Таблица: Daily_digest (Ежедневные дайджесты)
+CREATE TABLE Daily_digest (
+    id_daily SERIAL PRIMARY KEY,
+    datetime DATE NOT NULL,
+    text TEXT NOT NULL
+);
+
+-- 10. Таблица: Week_digest (Еженедельные дайджесты)
+CREATE TABLE Week_digest (
+    id_week SERIAL PRIMARY KEY,
+    datetime DATE NOT NULL,
+    text TEXT NOT NULL
+);
+
+CREATE INDEX idx_users_tg_username ON Users(tg_username);
+CREATE INDEX idx_users_jira_account ON Users(jira_account);
+CREATE INDEX idx_surveys_role_state ON Surveys(role, state);
+CREATE INDEX idx_responses_user ON Responses(id_user);
+CREATE INDEX idx_responses_survey ON Responses(id_survey);
+CREATE INDEX idx_blockers_response ON Blockers(id_response);
+CREATE INDEX idx_blockers_user ON Blockers(id_user);
+CREATE INDEX idx_blockers_critical ON Blockers(critical);
+CREATE INDEX idx_reports_blocker ON Reports(id_blocker);
+CREATE INDEX idx_reports_user ON Reports(id_user);
+CREATE INDEX idx_projects_jira_account ON Projects(jira_account);
+CREATE INDEX idx_sprints_status ON Sprints(status);
+CREATE INDEX idx_sprints_dates ON Sprints(start_date, finish_date);
+CREATE INDEX idx_tasks_project ON Tasks(id_project);
+CREATE INDEX idx_tasks_user ON Tasks("user");
+CREATE INDEX idx_daily_digest_datetime ON Daily_digest(datetime);
+CREATE INDEX idx_week_digest_datetime ON Week_digest(datetime);
+
+-- SELECT tablename AS table_name
+-- FROM pg_tables
+-- WHERE schemaname = 'public'
+-- ORDER BY tablename;
