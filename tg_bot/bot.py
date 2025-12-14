@@ -15,8 +15,7 @@ from tg_bot.config.constants import (
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.scheduler import SurveyScheduler
 
-# ИМПОРТИРУЕМ НОВЫЙ ЗАГРУЗЧИК
-from tg_bot.services.jira_loader import load_jira_data_on_startup
+from tg_bot.services.jira_loader import sync_jira_data_with_progress
 
 from tg_bot.config.texts import (
     HELP_TEXTS, PROFILE_TEXTS, JIRA_TEXTS, AUTH_TEXTS,
@@ -165,7 +164,7 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Запускаем в отдельном потоке, чтобы не блокировать бота
         def sync_thread():
-            success = syncjira_command(update, context)
+            success = sync_jira_data_with_progress(update, context)
             return success
 
         # Создаем и запускаем поток

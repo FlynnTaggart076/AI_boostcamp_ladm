@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
+import asyncio
 import logging
-from typing import List, Dict, Optional
-from datetime import datetime
 import requests
 
 from tg_bot.database.connection import db_connection
@@ -11,57 +11,89 @@ logger = logging.getLogger(__name__)
 
 
 class JiraLoader:
-    """Загрузчик данных из Jira в БД"""
-
     def __init__(self):
         self.base_url = config.JIRA_URL
+        # Р›РѕРіРёСЂСѓРµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ С‚РѕРєРµРЅРµ
+        if config.JIRA_API_TOKEN:
+            logger.info(f"Jira С‚РѕРєРµРЅ РїРѕР»СѓС‡РµРЅ, РґР»РёРЅР°: {len(config.JIRA_API_TOKEN)}")
+            logger.info(f"РџРµСЂРІС‹Рµ 10 СЃРёРјРІРѕР»РѕРІ С‚РѕРєРµРЅР°: {config.JIRA_API_TOKEN[:10]}...")
+            logger.info(f"РџРѕСЃР»РµРґРЅРёРµ 10 СЃРёРјРІРѕР»РѕРІ С‚РѕРєРµРЅР°: ...{config.JIRA_API_TOKEN[-10:]}")
+
         self.auth = (config.JIRA_EMAIL, config.JIRA_API_TOKEN)
         self.headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
 
-    def load_all_data(self) -> bool:
-        """Основной метод загрузки всех данных из Jira"""
+        # РўРµСЃС‚РѕРІС‹Р№ Р·Р°РїСЂРѕСЃ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРєР»СЋС‡РµРЅРёСЏ
+        self.test_connection()
+
+    def test_connection(self):
+        """РўРµСЃС‚РѕРІС‹Р№ Р·Р°РїСЂРѕСЃ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Jira"""
+        if not self.base_url or not config.JIRA_EMAIL or not config.JIRA_API_TOKEN:
+            logger.warning("Jira РЅР°СЃС‚СЂРѕР№РєРё РЅРµРїРѕР»РЅС‹Рµ, РїСЂРѕРїСѓСЃРєР°РµРј С‚РµСЃС‚ РїРѕРґРєР»СЋС‡РµРЅРёСЏ")
+            return
+
         try:
-            logger.info("? Начало загрузки данных из Jira...")
+            test_url = f"{self.base_url}/rest/api/3/myself"
+            logger.info(f"РџСЂРѕРІРµСЂРєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Jira: {test_url}")
 
-            # 1. Загружаем пользователей
+            response = requests.get(
+                test_url,
+                headers=self.headers,
+                auth=self.auth,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                logger.info("РџРѕРґРєР»СЋС‡РµРЅРёРµ Рє Jira СѓСЃРїРµС€РЅРѕ!")
+            else:
+                logger.error(f"РћС€РёР±РєР° РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Jira: {response.status_code}")
+                logger.error(f"РћС‚РІРµС‚: {response.text[:200]}")
+
+        except Exception as e:
+            logger.error(f"РћС€РёР±РєР° РїСЂРё С‚РµСЃС‚Рµ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Jira: {e}")
+
+    def load_all_data(self) -> bool:
+        try:
+            logger.info("РќР°С‡Р°Р»Рѕ Р·Р°РіСЂСѓР·РєРё РґР°РЅРЅС‹С… РёР· Jira...")
+
+            # 1. Р—Р°РіСЂСѓР¶Р°РµРј РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
             if not self.load_users():
-                logger.error("? Ошибка загрузки пользователей")
+                logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№")
                 return False
 
-            # 2. Загружаем проекты
+            # 2. Р—Р°РіСЂСѓР¶Р°РµРј РїСЂРѕРµРєС‚С‹
             if not self.load_projects():
-                logger.error("? Ошибка загрузки проектов")
+                logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїСЂРѕРµРєС‚РѕРІ")
                 return False
 
-            # 3. Загружаем доски
+            # 3. Р—Р°РіСЂСѓР¶Р°РµРј РґРѕСЃРєРё
             if not self.load_boards():
-                logger.error("? Ошибка загрузки досок")
+                logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РґРѕСЃРѕРє")
                 return False
 
-            # 4. Загружаем спринты
+            # 4. Р—Р°РіСЂСѓР¶Р°РµРј СЃРїСЂРёРЅС‚С‹
             if not self.load_sprints():
-                logger.error("? Ошибка загрузки спринтов")
+                logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРїСЂРёРЅС‚РѕРІ")
                 return False
 
-            # 5. Загружаем задачи
+            # 5. Р—Р°РіСЂСѓР¶Р°РµРј Р·Р°РґР°С‡Рё
             if not self.load_tasks():
-                logger.error("? Ошибка загрузки задач")
+                logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РґР°С‡")
                 return False
 
-            logger.info("? Все данные Jira успешно загружены в БД")
+            logger.info("Р’СЃРµ РґР°РЅРЅС‹Рµ Jira СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹ РІ Р‘Р”")
             return True
 
         except Exception as e:
-            logger.error(f"? Ошибка при загрузке данных Jira: {e}")
+            logger.error(f"РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РґР°РЅРЅС‹С… Jira: {e}")
             return False
 
     def load_users(self) -> bool:
-        """Загрузка всех пользователей из Jira в таблицу users"""
+        """Р—Р°РіСЂСѓР·РєР° РІСЃРµС… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РёР· Jira РІ С‚Р°Р±Р»РёС†Сѓ users"""
         try:
-            logger.info("? Загрузка пользователей из Jira...")
+            logger.info("Р—Р°РіСЂСѓР·РєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РёР· Jira...")
 
             url = f"{self.base_url}/rest/api/3/users/search"
             all_users = []
@@ -88,41 +120,41 @@ class JiraLoader:
                         break
 
                     all_users.extend(users_batch)
-                    logger.info(f"   Загружено пользователей: {len(users_batch)} (всего: {len(all_users)})")
+                    logger.info(f"Р—Р°РіСЂСѓР¶РµРЅРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№: {len(users_batch)} (РІСЃРµРіРѕ: {len(all_users)})")
 
                     if len(users_batch) < max_results:
                         break
 
                     start_at += max_results
                 else:
-                    logger.error(f"   Ошибка получения пользователей: {response.status_code}")
+                    logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№: {response.status_code}")
                     return False
 
-            # Сохраняем пользователей в БД
+            # РЎРѕС…СЂР°РЅСЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РІ Р‘Р”
             saved_count = 0
             for user in all_users:
-                if user.get('active', False):  # Только активных пользователей
+                if user.get('active', False):  # РўРѕР»СЊРєРѕ Р°РєС‚РёРІРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
                     user_data = {
                         'jira_name': user.get('displayName'),
                         'jira_email': user.get('emailAddress')
                     }
 
-                    # Сохраняем через UserModel
+                    # РЎРѕС…СЂР°РЅСЏРµРј С‡РµСЂРµР· UserModel
                     user_id = UserModel.save_jira_user(user_data)
                     if user_id:
                         saved_count += 1
 
-            logger.info(f"? Пользователей сохранено в БД: {saved_count}/{len(all_users)}")
+            logger.info(f"РџРѕР»СЊР·РѕРІР°С‚РµР»РµР№ СЃРѕС…СЂР°РЅРµРЅРѕ РІ Р‘Р”: {saved_count}/{len(all_users)}")
             return True
 
         except Exception as e:
-            logger.error(f"? Ошибка загрузки пользователей: {e}")
+            logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№: {e}")
             return False
 
     def load_projects(self) -> bool:
-        """Загрузка всех проектов из Jira"""
+        """Р—Р°РіСЂСѓР·РєР° РІСЃРµС… РїСЂРѕРµРєС‚РѕРІ РёР· Jira"""
         try:
-            logger.info("? Загрузка проектов из Jira...")
+            logger.info("Р—Р°РіСЂСѓР·РєР° РїСЂРѕРµРєС‚РѕРІ РёР· Jira...")
 
             url = f"{self.base_url}/rest/api/3/project/search"
 
@@ -137,13 +169,13 @@ class JiraLoader:
                 data = response.json()
                 projects = data.get('values', [])
 
-                # Сохраняем проекты в БД
+                # РЎРѕС…СЂР°РЅСЏРµРј РїСЂРѕРµРєС‚С‹ РІ Р‘Р”
                 saved_count = 0
                 for project in projects:
                     project_key = project.get('key', '')
                     project_name = project.get('name', '')
 
-                    if project_key:  # Проверяем, что ключ проекта существует
+                    if project_key:  # РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РєР»СЋС‡ РїСЂРѕРµРєС‚Р° СЃСѓС‰РµСЃС‚РІСѓРµС‚
                         query = '''
                         INSERT INTO projects 
                         (project_key, name, projecttypekey, jira_name, jira_email)
@@ -170,26 +202,26 @@ class JiraLoader:
                                 connection.commit()
                                 saved_count += 1
                             except Exception as e:
-                                logger.error(f"   Ошибка сохранения проекта {project_key}: {e}")
+                                logger.error(f"РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РїСЂРѕРµРєС‚Р° {project_key}: {e}")
                                 connection.rollback()
                             finally:
                                 cursor.close()
                                 connection.close()
 
-                logger.info(f"? Проектов сохранено в БД: {saved_count}/{len(projects)}")
+                logger.info(f"РџСЂРѕРµРєС‚РѕРІ СЃРѕС…СЂР°РЅРµРЅРѕ РІ Р‘Р”: {saved_count}/{len(projects)}")
                 return True
             else:
-                logger.error(f"? Ошибка получения проектов: {response.status_code}")
+                logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРµРєС‚РѕРІ: {response.status_code}")
                 return False
 
         except Exception as e:
-            logger.error(f"? Ошибка загрузки проектов: {e}")
+            logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїСЂРѕРµРєС‚РѕРІ: {e}")
             return False
 
     def load_boards(self) -> bool:
-        """Загрузка всех досок из Jira"""
+        """Р—Р°РіСЂСѓР·РєР° РІСЃРµС… РґРѕСЃРѕРє РёР· Jira"""
         try:
-            logger.info("? Загрузка досок из Jira...")
+            logger.info("Р—Р°РіСЂСѓР·РєР° РґРѕСЃРѕРє РёР· Jira...")
 
             url = f"{self.base_url}/rest/agile/1.0/board"
             all_boards = []
@@ -217,17 +249,17 @@ class JiraLoader:
                         break
 
                     all_boards.extend(boards_batch)
-                    logger.info(f"   Загружено досок: {len(boards_batch)} (всего: {len(all_boards)})")
+                    logger.info(f"Р—Р°РіСЂСѓР¶РµРЅРѕ РґРѕСЃРѕРє: {len(boards_batch)} (РІСЃРµРіРѕ: {len(all_boards)})")
 
                     if len(boards_batch) < max_results:
                         break
 
                     start_at += max_results
                 else:
-                    logger.error(f"   Ошибка получения досок: {response.status_code}")
+                    logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРѕСЃРѕРє: {response.status_code}")
                     return False
 
-            # Сохраняем доски в БД
+            # РЎРѕС…СЂР°РЅСЏРµРј РґРѕСЃРєРё РІ Р‘Р”
             saved_count = 0
             for board in all_boards:
                 board_id = board.get('id')
@@ -253,28 +285,28 @@ class JiraLoader:
                             connection.commit()
                             saved_count += 1
                         except Exception as e:
-                            logger.error(f"   Ошибка сохранения доски {board_id}: {e}")
+                            logger.error(f"РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РґРѕСЃРєРё {board_id}: {e}")
                             connection.rollback()
                         finally:
                             cursor.close()
                             connection.close()
 
-            logger.info(f"? Досок сохранено в БД: {saved_count}/{len(all_boards)}")
+            logger.info(f"Р”РѕСЃРѕРє СЃРѕС…СЂР°РЅРµРЅРѕ РІ Р‘Р”: {saved_count}/{len(all_boards)}")
             return True
 
         except Exception as e:
-            logger.error(f"? Ошибка загрузки досок: {e}")
+            logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РґРѕСЃРѕРє: {e}")
             return False
 
     def load_sprints(self) -> bool:
-        """Загрузка всех спринтов из Jira"""
+        """Р—Р°РіСЂСѓР·РєР° РІСЃРµС… СЃРїСЂРёРЅС‚РѕРІ РёР· Jira"""
         try:
-            logger.info("? Загрузка спринтов из Jira...")
+            logger.info("Р—Р°РіСЂСѓР·РєР° СЃРїСЂРёРЅС‚РѕРІ РёР· Jira...")
 
-            # Сначала получаем все доски из БД
+            # РЎРЅР°С‡Р°Р»Р° РїРѕР»СѓС‡Р°РµРј РІСЃРµ РґРѕСЃРєРё РёР· Р‘Р”
             connection = db_connection.get_connection()
             if not connection:
-                logger.error("? Нет подключения к БД для получения досок")
+                logger.error("РќРµС‚ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Р‘Р” РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РґРѕСЃРѕРє")
                 return False
 
             try:
@@ -282,17 +314,17 @@ class JiraLoader:
                 cursor.execute("SELECT id_board FROM boards")
                 board_ids = [row[0] for row in cursor.fetchall()]
             except Exception as e:
-                logger.error(f"? Ошибка получения досок из БД: {e}")
+                logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРѕСЃРѕРє РёР· Р‘Р”: {e}")
                 return False
             finally:
                 cursor.close()
                 connection.close()
 
             if not board_ids:
-                logger.warning("??  В БД нет досок, пропускаем загрузку спринтов")
+                logger.warning("Р’ Р‘Р” РЅРµС‚ РґРѕСЃРѕРє, РїСЂРѕРїСѓСЃРєР°РµРј Р·Р°РіСЂСѓР·РєСѓ СЃРїСЂРёРЅС‚РѕРІ")
                 return True
 
-            # Загружаем спринты для каждой доски
+            # Р—Р°РіСЂСѓР¶Р°РµРј СЃРїСЂРёРЅС‚С‹ РґР»СЏ РєР°Р¶РґРѕР№ РґРѕСЃРєРё
             total_saved = 0
             for board_id in board_ids:
                 try:
@@ -309,7 +341,7 @@ class JiraLoader:
                         data = response.json()
                         sprints = data.get('values', [])
 
-                        # Сохраняем спринты в БД
+                        # РЎРѕС…СЂР°РЅСЏРµРј СЃРїСЂРёРЅС‚С‹ РІ Р‘Р”
                         for sprint in sprints:
                             sprint_id = sprint.get('id')
                             sprint_name = sprint.get('name', '')
@@ -345,33 +377,33 @@ class JiraLoader:
                                         connection.commit()
                                         total_saved += 1
                                     except Exception as e:
-                                        logger.error(f"   Ошибка сохранения спринта {sprint_id}: {e}")
+                                        logger.error(f"РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ СЃРїСЂРёРЅС‚Р° {sprint_id}: {e}")
                                         connection.rollback()
                                     finally:
                                         cursor.close()
                                         connection.close()
 
-                        logger.info(f"   Доска {board_id}: найдено {len(sprints)} спринтов")
+                        logger.info(f"Р”РѕСЃРєР° {board_id}: РЅР°Р№РґРµРЅРѕ {len(sprints)} СЃРїСЂРёРЅС‚РѕРІ")
                     else:
-                        logger.warning(f"   Доска {board_id}: нет спринтов или ошибка {response.status_code}")
+                        logger.warning(f"Р”РѕСЃРєР° {board_id}: РЅРµС‚ СЃРїСЂРёРЅС‚РѕРІ РёР»Рё РѕС€РёР±РєР° {response.status_code}")
 
                 except Exception as e:
-                    logger.error(f"   Ошибка загрузки спринтов для доски {board_id}: {e}")
+                    logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРїСЂРёРЅС‚РѕРІ РґР»СЏ РґРѕСЃРєРё {board_id}: {e}")
                     continue
 
-            logger.info(f"? Спринтов сохранено в БД: {total_saved}")
+            logger.info(f"РЎРїСЂРёРЅС‚РѕРІ СЃРѕС…СЂР°РЅРµРЅРѕ РІ Р‘Р”: {total_saved}")
             return True
 
         except Exception as e:
-            logger.error(f"? Ошибка загрузки спринтов: {e}")
+            logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРїСЂРёРЅС‚РѕРІ: {e}")
             return False
 
     def load_tasks(self, days_back: int = 365) -> bool:
-        """Загрузка задач из Jira (за последние N дней)"""
+        """Р—Р°РіСЂСѓР·РєР° Р·Р°РґР°С‡ РёР· Jira (Р·Р° РїРѕСЃР»РµРґРЅРёРµ N РґРЅРµР№)"""
         try:
-            logger.info("? Загрузка задач из Jira...")
+            logger.info("Р—Р°РіСЂСѓР·РєР° Р·Р°РґР°С‡ РёР· Jira...")
 
-            # JQL запрос для задач за последние N дней
+            # JQL Р·Р°РїСЂРѕСЃ РґР»СЏ Р·Р°РґР°С‡ Р·Р° РїРѕСЃР»РµРґРЅРёРµ N РґРЅРµР№
             jql = f'created >= -{days_back}d order by created DESC'
 
             url = f"{self.base_url}/rest/api/3/search/jql"
@@ -379,7 +411,7 @@ class JiraLoader:
             all_tasks = []
             start_at = 0
             max_results = 100
-            max_total = 1000  # Максимум задач для загрузки
+            max_total = 1000  # РњР°РєСЃРёРјСѓРј Р·Р°РґР°С‡ РґР»СЏ Р·Р°РіСЂСѓР·РєРё
 
             while len(all_tasks) < max_total:
                 payload = {
@@ -407,17 +439,17 @@ class JiraLoader:
                         break
 
                     all_tasks.extend(tasks_batch)
-                    logger.info(f"   Загружено задач: {len(tasks_batch)} (всего: {len(all_tasks)} из {total})")
+                    logger.info(f"Р—Р°РіСЂСѓР¶РµРЅРѕ Р·Р°РґР°С‡: {len(tasks_batch)} (РІСЃРµРіРѕ: {len(all_tasks)} РёР· {total})")
 
                     if start_at + len(tasks_batch) >= total or len(all_tasks) >= max_total:
                         break
 
                     start_at += max_results
                 else:
-                    logger.error(f"   Ошибка получения задач: {response.status_code}")
+                    logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°РґР°С‡: {response.status_code}")
                     return False
 
-            # Сохраняем задачи в БД
+            # РЎРѕС…СЂР°РЅСЏРµРј Р·Р°РґР°С‡Рё РІ Р‘Р”
             saved_count = 0
             for task in all_tasks:
                 try:
@@ -429,7 +461,7 @@ class JiraLoader:
 
                     fields = task.get('fields', {})
 
-                    # Определяем ID спринта
+                    # РћРїСЂРµРґРµР»СЏРµРј ID СЃРїСЂРёРЅС‚Р°
                     id_sprint = None
                     sprint_data = fields.get('sprint')
                     if sprint_data:
@@ -438,11 +470,11 @@ class JiraLoader:
                         elif isinstance(sprint_data, dict):
                             id_sprint = sprint_data.get('id')
 
-                    # Определяем ID пользователя (assignee)
+                    # РћРїСЂРµРґРµР»СЏРµРј ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (assignee)
                     id_user = None
                     assignee = fields.get('assignee')
                     if assignee and assignee.get('emailAddress'):
-                        # Пытаемся найти пользователя в БД по email
+                        # РџС‹С‚Р°РµРјСЃСЏ РЅР°Р№С‚Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ Р‘Р” РїРѕ email
                         user = UserModel.get_user_by_jira_email(assignee['emailAddress'])
                         if user:
                             id_user = user.get('id_user')
@@ -480,7 +512,7 @@ class JiraLoader:
                                 fields.get('reporter', {}).get('displayName'),
                                 fields.get('assignee', {}).get('displayName'),
                                 fields.get('issuetype', {}).get('name'),
-                                0,  # hierarchylevel - по умолчанию 0
+                                0,  # hierarchylevel - РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 0
                                 fields.get('status', {}).get('name'),
                                 id_sprint,
                                 id_user
@@ -488,27 +520,27 @@ class JiraLoader:
                             connection.commit()
                             saved_count += 1
                         except Exception as e:
-                            logger.error(f"   Ошибка сохранения задачи {task_key}: {e}")
+                            logger.error(f"РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ Р·Р°РґР°С‡Рё {task_key}: {e}")
                             connection.rollback()
                         finally:
                             cursor.close()
                             connection.close()
 
                 except Exception as e:
-                    logger.error(f"   Ошибка обработки задачи: {e}")
+                    logger.error(f"РћС€РёР±РєР° РѕР±СЂР°Р±РѕС‚РєРё Р·Р°РґР°С‡Рё: {e}")
                     continue
 
-            logger.info(f"? Задач сохранено в БД: {saved_count}/{len(all_tasks)}")
+            logger.info(f"Р—Р°РґР°С‡ СЃРѕС…СЂР°РЅРµРЅРѕ РІ Р‘Р”: {saved_count}/{len(all_tasks)}")
             return True
 
         except Exception as e:
-            logger.error(f"? Ошибка загрузки задач: {e}")
+            logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РґР°С‡: {e}")
             return False
 
     def clear_old_data(self) -> bool:
-        """Очистка старых данных перед загрузкой (опционально)"""
+        """РћС‡РёСЃС‚РєР° СЃС‚Р°СЂС‹С… РґР°РЅРЅС‹С… РїРµСЂРµРґ Р·Р°РіСЂСѓР·РєРѕР№ (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)"""
         try:
-            logger.info("? Очистка старых данных Jira...")
+            logger.info("РћС‡РёСЃС‚РєР° СЃС‚Р°СЂС‹С… РґР°РЅРЅС‹С… Jira...")
 
             connection = db_connection.get_connection()
             if not connection:
@@ -523,14 +555,14 @@ class JiraLoader:
                 for table in tables_to_clear:
                     cursor.execute(f"DELETE FROM {table}")
                     cleared_count += 1
-                    logger.info(f"   Таблица {table} очищена")
+                    logger.info(f"РўР°Р±Р»РёС†Р° {table} РѕС‡РёС‰РµРЅР°")
 
                 connection.commit()
-                logger.info(f"? Очищено таблиц: {cleared_count}")
+                logger.info(f"РћС‡РёС‰РµРЅРѕ С‚Р°Р±Р»РёС†: {cleared_count}")
                 return True
 
             except Exception as e:
-                logger.error(f"? Ошибка очистки данных: {e}")
+                logger.error(f"РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РґР°РЅРЅС‹С…: {e}")
                 connection.rollback()
                 return False
             finally:
@@ -538,55 +570,185 @@ class JiraLoader:
                 connection.close()
 
         except Exception as e:
-            logger.error(f"? Ошибка при очистке данных: {e}")
+            logger.error(f"РћС€РёР±РєР° РїСЂРё РѕС‡РёСЃС‚РєРµ РґР°РЅРЅС‹С…: {e}")
             return False
 
 
-# Создаем глобальный экземпляр загрузчика
+# РЎРѕР·РґР°РµРј РіР»РѕР±Р°Р»СЊРЅС‹Р№ СЌРєР·РµРјРїР»СЏСЂ Р·Р°РіСЂСѓР·С‡РёРєР°
 jira_loader = JiraLoader()
 
 
-# Функции для удобного использования
-def load_jira_data_on_startup(clear_old: bool = False) -> bool:
-    """Загрузка данных Jira при запуске бота"""
+def sync_jira_data_with_progress(update=None, context=None):
+    """Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РґР°РЅРЅС‹С… Jira СЃ РѕС‚РїСЂР°РІРєРѕР№ РїСЂРѕРіСЂРµСЃСЃР° РІ Telegram"""
     try:
-        logger.info("? Запуск загрузки данных Jira при старте бота")
+        if update and context:
+            # РћС‚РїСЂР°РІР»СЏРµРј РЅР°С‡Р°Р»СЊРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("РќР°С‡РёРЅР°СЋ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЋ..."),
+                asyncio.get_event_loop()
+            )
+
+        logger.info("Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РґР°РЅРЅС‹С… Jira...")
+
+        # 1. РћС‡РёСЃС‚РєР° СЃС‚Р°СЂС‹С… РґР°РЅРЅС‹С…
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("РћС‡РёСЃС‚РєР° СЃС‚Р°СЂС‹С… РґР°РЅРЅС‹С…..."),
+                asyncio.get_event_loop()
+            )
+
+        jira_loader.clear_old_data()
+
+        # 2. Р—Р°РіСЂСѓР·РєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("Р—Р°РіСЂСѓР·РєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№..."),
+                asyncio.get_event_loop()
+            )
+
+        if not jira_loader.load_users():
+            logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№")
+            if update and context:
+                asyncio.run_coroutine_threadsafe(
+                    update.message.reply_text("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№"),
+                    asyncio.get_event_loop()
+                )
+            return False
+
+        # 3. Р—Р°РіСЂСѓР·РєР° РїСЂРѕРµРєС‚РѕРІ
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("Р—Р°РіСЂСѓР·РєР° РїСЂРѕРµРєС‚РѕРІ..."),
+                asyncio.get_event_loop()
+            )
+
+        if not jira_loader.load_projects():
+            logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїСЂРѕРµРєС‚РѕРІ")
+            if update and context:
+                asyncio.run_coroutine_threadsafe(
+                    update.message.reply_text("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РїСЂРѕРµРєС‚РѕРІ, РїСЂРѕРґРѕР»Р¶Р°РµРј..."),
+                    asyncio.get_event_loop()
+                )
+
+        # 4. Р—Р°РіСЂСѓР·РєР° РґРѕСЃРѕРє
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("Р—Р°РіСЂСѓР·РєР° РґРѕСЃРѕРє..."),
+                asyncio.get_event_loop()
+            )
+
+        if not jira_loader.load_boards():
+            logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РґРѕСЃРѕРє")
+            if update and context:
+                asyncio.run_coroutine_threadsafe(
+                    update.message.reply_text("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РґРѕСЃРѕРє, РїСЂРѕРґРѕР»Р¶Р°РµРј..."),
+                    asyncio.get_event_loop()
+                )
+
+        # 5. Р—Р°РіСЂСѓР·РєР° СЃРїСЂРёРЅС‚РѕРІ
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("Р—Р°РіСЂСѓР·РєР° СЃРїСЂРёРЅС‚РѕРІ..."),
+                asyncio.get_event_loop()
+            )
+
+        if not jira_loader.load_sprints():
+            logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРїСЂРёРЅС‚РѕРІ")
+            if update and context:
+                asyncio.run_coroutine_threadsafe(
+                    update.message.reply_text("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРїСЂРёРЅС‚РѕРІ, РїСЂРѕРґРѕР»Р¶Р°РµРј..."),
+                    asyncio.get_event_loop()
+                )
+
+        # 6. Р—Р°РіСЂСѓР·РєР° Р·Р°РґР°С‡
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text("Р—Р°РіСЂСѓР·РєР° Р·Р°РґР°С‡..."),
+                asyncio.get_event_loop()
+            )
+
+        if not jira_loader.load_tasks():
+            logger.error("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РґР°С‡")
+            if update and context:
+                asyncio.run_coroutine_threadsafe(
+                    update.message.reply_text("РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё Р·Р°РґР°С‡, РїСЂРѕРґРѕР»Р¶Р°РµРј..."),
+                    asyncio.get_event_loop()
+                )
+
+        logger.info("Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ Р·Р°РІРµСЂС€РµРЅР° СѓСЃРїРµС€РЅРѕ")
+
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text(
+                    "РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ СЃ Jira Р·Р°РІРµСЂС€РµРЅР° СѓСЃРїРµС€РЅРѕ!\n"
+                    "Р’СЃРµ РґР°РЅРЅС‹Рµ РѕР±РЅРѕРІР»РµРЅС‹:\n"
+                    "вЂў РџРѕР»СЊР·РѕРІР°С‚РµР»Рё\n"
+                    "вЂў РџСЂРѕРµРєС‚С‹\n"
+                    "вЂў Р”РѕСЃРєРё\n"
+                    "вЂў РЎРїСЂРёРЅС‚С‹\n"
+                    "вЂў Р—Р°РґР°С‡Рё"
+                ),
+                asyncio.get_event_loop()
+            )
+
+        return True
+
+    except Exception as e:
+        logger.error(f"РћС€РёР±РєР° РїСЂРё СЂСѓС‡РЅРѕР№ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё: {e}")
+
+        if update and context:
+            asyncio.run_coroutine_threadsafe(
+                update.message.reply_text(
+                    f"РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё:\n"
+                    f"{str(e)[:200]}..."
+                ),
+                asyncio.get_event_loop()
+            )
+
+        return False
+
+
+# Р¤СѓРЅРєС†РёРё РґР»СЏ СѓРґРѕР±РЅРѕРіРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
+def load_jira_data_on_startup(clear_old: bool = False) -> bool:
+    """Р—Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С… Jira РїСЂРё Р·Р°РїСѓСЃРєРµ Р±РѕС‚Р°"""
+    try:
+        logger.info("Р—Р°РїСѓСЃРє Р·Р°РіСЂСѓР·РєРё РґР°РЅРЅС‹С… Jira РїСЂРё СЃС‚Р°СЂС‚Рµ Р±РѕС‚Р°")
 
         if clear_old:
             if not jira_loader.clear_old_data():
-                logger.warning("??  Не удалось очистить старые данные, продолжаем загрузку")
+                logger.warning("РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‡РёСЃС‚РёС‚СЊ СЃС‚Р°СЂС‹Рµ РґР°РЅРЅС‹Рµ, РїСЂРѕРґРѕР»Р¶Р°РµРј Р·Р°РіСЂСѓР·РєСѓ")
 
         success = jira_loader.load_all_data()
 
         if success:
-            logger.info("? Данные Jira успешно загружены при старте бота")
+            logger.info("Р”Р°РЅРЅС‹Рµ Jira СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹ РїСЂРё СЃС‚Р°СЂС‚Рµ Р±РѕС‚Р°")
         else:
-            logger.error("? Не удалось загрузить данные Jira при старте бота")
+            logger.error("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґР°РЅРЅС‹Рµ Jira РїСЂРё СЃС‚Р°СЂС‚Рµ Р±РѕС‚Р°")
 
         return success
 
     except Exception as e:
-        logger.error(f"? Критическая ошибка при загрузке данных Jira: {e}")
+        logger.error(f"РљСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РґР°РЅРЅС‹С… Jira: {e}")
         return False
 
 
 def sync_jira_data_manually() -> bool:
-    """Ручная синхронизация данных Jira (для команды /syncjira)"""
+    """Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РґР°РЅРЅС‹С… Jira (РґР»СЏ РєРѕРјР°РЅРґС‹ /syncjira)"""
     try:
-        logger.info("? Ручная синхронизация данных Jira...")
+        logger.info("Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РґР°РЅРЅС‹С… Jira...")
 
-        # Очищаем старые данные перед загрузкой новых
+        # РћС‡РёС‰Р°РµРј СЃС‚Р°СЂС‹Рµ РґР°РЅРЅС‹Рµ РїРµСЂРµРґ Р·Р°РіСЂСѓР·РєРѕР№ РЅРѕРІС‹С…
         jira_loader.clear_old_data()
 
         success = jira_loader.load_all_data()
 
         if success:
-            logger.info("? Ручная синхронизация завершена успешно")
+            logger.info("Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ Р·Р°РІРµСЂС€РµРЅР° СѓСЃРїРµС€РЅРѕ")
         else:
-            logger.error("? Ручная синхронизация завершена с ошибками")
+            logger.error("Р СѓС‡РЅР°СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ Р·Р°РІРµСЂС€РµРЅР° СЃ РѕС€РёР±РєР°РјРё")
 
         return success
 
     except Exception as e:
-        logger.error(f"? Ошибка при ручной синхронизации: {e}")
+        logger.error(f"РћС€РёР±РєР° РїСЂРё СЂСѓС‡РЅРѕР№ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё: {e}")
         return False
