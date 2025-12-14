@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "total_boards": 1
+  },
+  "boards": [
+    {
+      "id": 1,
+      "name": "SCRUM board",
+      "projectKey": "SCRUM"
+    }
+  ]
+}

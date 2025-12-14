@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "total_tasks": 16,
+    "jql_query": "created >= '2024-12-12' AND created <= '2025-12-12' order by created DESC",
+    "retrieved_at": "2025-12-12 16:17:34"
+  },
+  "tasks": [
+    {
+      "task_key": "SCRUM-16",
+      "summary": "Удались",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "ishchenkomargo05",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "indeterminate",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-15",
+      "summary": "Найти портал в рай",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Кристина Ильичёва",
+      "assignee_name": "ishchenkomargo05",
+      "issue_type": "Эпик",
+      "hierarchyLevel": 1,
+      "status_key": "indeterminate",
+      "sprint_id": null
+    },
+    {
+      "task_key": "SCRUM-14",
+      "summary": "Найти атрибут приделывания (Антон, прости... Не без жертв)",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "new",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-13",
+      "summary": "Достать гвозди",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "new",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-12",
+      "summary": "Достать молоток",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "new",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-11",
+      "summary": "Муравью откусить попу",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "",
+      "issue_type": "Эпик",
+      "hierarchyLevel": 1,
+      "status_key": "new",
+      "sprint_id": null
+    },
+    {
+      "task_key": "SCRUM-10",
+      "summary": "Проблема и её в этом",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Кристина Ильичёва",
+      "assignee_name": "ishchenkomargo05",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "indeterminate",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-9",
+      "summary": "Дать Антону 10000000000 тэнге",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Anton",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "indeterminate",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-8",
+      "summary": "Дать Антону 10000000 Долларов",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Anton",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "indeterminate",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-7",
+      "summary": "Н8рио о чем отличается ",
+      "priority_name": "Low",
+      "project_key": "SCRUM",
+      "reporter_name": "Кристина Ильичёва",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "done",
+      "sprint_id": null
+    },
+    {
+      "task_key": "SCRUM-6",
+      "summary": "Дать коту мышку",
+      "priority_name": "Medium",
+      "project_key": "SCRUM",
+      "reporter_name": "Кристина Ильичёва",
+      "assignee_name": "ishchenkomargo05",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "indeterminate",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-5",
+      "summary": "Задача 3",
+      "priority_name": "Highest",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "Кристина Ильичёва",
+      "issue_type": "История",
+      "hierarchyLevel": 0,
+      "status_key": "done",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-4",
+      "summary": "Подзадача 2.1",
+      "priority_name": "",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "",
+      "issue_type": "Subtask",
+      "hierarchyLevel": -1,
+      "status_key": "done",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-3",
+      "summary": "Задача 3",
+      "priority_name": "",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "",
+      "issue_type": "Feature",
+      "hierarchyLevel": 0,
+      "status_key": "indeterminate",
+      "sprint_id": null
+    },
+    {
+      "task_key": "SCRUM-2",
+      "summary": "Задача 2",
+      "priority_name": "Highest",
+      "project_key": "SCRUM",
+      "reporter_name": "Артём Малышев",
+      "assignee_name": "Anton",
+      "issue_type": "История",
+      "hierarchyLevel": 0,
+      "status_key": "done",
+      "sprint_id": 2
+    },
+    {
+      "task_key": "SCRUM-1",
+      "summary": "Артем отчисляйся",
+      "priority_name": "Highest",
+      "project_key": "SCRUM",
+      "reporter_name": "Anton",
+      "assignee_name": "Артём Малышев",
+      "issue_type": "Задача",
+      "hierarchyLevel": 0,
+      "status_key": "new",
+      "sprint_id": 2
+    }
+  ]
+}

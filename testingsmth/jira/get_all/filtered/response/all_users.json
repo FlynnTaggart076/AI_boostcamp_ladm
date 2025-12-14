@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "total_users": 5
+  },
+  "users": [
+    {
+      "displayName": "Артём Малышев",
+      "emailAddress": "mav.artem.kz2007@gmail.com"
+    },
+    {
+      "displayName": "Кристина Ильичёва",
+      "emailAddress": ""
+    },
+    {
+      "displayName": "Anton",
+      "emailAddress": ""
+    },
+    {
+      "displayName": "ishchenkomargo05",
+      "emailAddress": ""
+    },
+    {
+      "displayName": "Margarita Ishchenko",
+      "emailAddress": ""
+    }
+  ]
+}

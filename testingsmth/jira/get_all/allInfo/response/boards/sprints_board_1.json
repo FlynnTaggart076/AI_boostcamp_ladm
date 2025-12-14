@@ -1,0 +1,25 @@
+{
+    "isLast": true,
+    "maxResults": 50,
+    "startAt": 0,
+    "total": 2,
+    "values": [
+        {
+            "endDate": "2025-12-23T11:11:51.077Z",
+            "id": 2,
+            "name": "SCRUM Sprint 0",
+            "originBoardId": 1,
+            "self": "https://mavartemkz2007.atlassian.net/rest/agile/1.0/sprint/2",
+            "startDate": "2025-12-09T11:11:51.077Z",
+            "state": "active"
+        },
+        {
+            "createdDate": "2025-12-09T11:11:46.396Z",
+            "id": 1,
+            "name": "SCRUM Спринт 1",
+            "originBoardId": 1,
+            "self": "https://mavartemkz2007.atlassian.net/rest/agile/1.0/sprint/1",
+            "state": "future"
+        }
+    ]
+}

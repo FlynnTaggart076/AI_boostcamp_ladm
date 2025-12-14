@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "total_projects": 2
+  },
+  "projects": [
+    {
+      "key": "SCRUM",
+      "name": "My Software Team",
+      "projectTypeKey": "software"
+    },
+    {
+      "key": "AM7",
+      "name": "Пупупу 7 дней до финала",
+      "projectTypeKey": "business"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+ Проекты
+1. `/rest/api/3/project` - Все проекты (ваш код)
+2. `/rest/api/3/project/{projectIdOrKey}` - Конкретный проект по ID или ключу
+3. `/rest/api/3/project/{projectIdOrKey}/statuses` - Статусы проекта
+***`/rest/api/3/project/{projectIdOrKey}/components` - Компоненты проекта
+5. `/rest/api/3/project/{projectIdOrKey}/versions` - Версии проекта
+
+ Задачи (Issues)
+6. `/rest/api/3/issue/{issueIdOrKey}` - Конкретная задача (ваш код для SCRUM-1)
+7. `/rest/api/3/issue/{issueIdOrKey}/changelog` - История изменений задачи
+8. `/rest/api/3/issue/{issueIdOrKey}/comment` - Комментарии задачи
+9. `/rest/api/3/issue/{issueIdOrKey}/worklog` - Worklog задачи
+10. `/rest/api/3/issue/{issueIdOrKey}/transitions` - Возможные переходы статусов
+
+ Поиск
+11. `/rest/api/3/search` - Поиск задач (основной метод для получения списка задач)
+12. `/rest/api/3/issue/picker` - Быстрый поиск задач по части ключа
+
+ Поля и метаданные
+13. `/rest/api/3/field` - Все доступные поля в Jira
+14. `/rest/api/3/issue/createmeta` - Метаданные для создания задач
+15. `/rest/api/3/issue/createmeta/{projectIdOrKey}/issuetypes` - Типы задач для проекта
+
+ Пользователи
+16. `/rest/api/3/user/search` - Поиск пользователей
+17. `/rest/api/3/user` - Информация о текущем пользователе
+18. `/rest/api/3/user/{accountId}` - Информация о конкретном пользователе
+
+ Доски и спринты (Agile API)
+19. `/rest/agile/1.0/board` - Все доски
+20. `/rest/agile/1.0/board/{boardId}` - Конкретная доска
+21. `/rest/agile/1.0/board/{boardId}/configuration` - Конфигурация доски
+
+ Задачи на досках
+22. `/rest/agile/1.0/board/{boardId}/issue` - Все задачи доски (ваш код в board_tasks.py)
+23. `/rest/agile/1.0/board/{boardId}/epic` - Эпики на доске
+24. `/rest/agile/1.0/board/{boardId}/backlog` - Backlog доски
+
+ Спринты
+25. `/rest/agile/1.0/board/{boardId}/sprint` - Все спринты доски (ваш код в board.py)
+26. `/rest/agile/1.0/sprint/{sprintId}` - Конкретный спринт
+27. `/rest/agile/1.0/sprint/{sprintId}/issue` - Задачи спринта (ваш код в sprint.py)
+
+ Отчеты Agile
+28. `/rest/agile/1.0/board/{boardId}/sprint/{sprintId}/issue` - Задачи спринта (альтернативный путь)
+29. `/rest/greenhopper/1.0/rapid/charts/sprintreport` - Отчет по спринту
+30. `/rest/greenhopper/1.0/rapid/charts/controlchart` - Control Chart
+
+ Фильтры
+31. `/rest/api/3/filter` - Все сохраненные фильтры
+32. `/rest/api/3/filter/{id}` - Конкретный фильтр
+33. `/rest/api/3/filter/{id}/columns` - Колонки фильтра
+
+ Рабочие процессы (Workflows)
+34. `/rest/api/3/workflow` - Все рабочие процессы
+35. `/rest/api/3/workflow/{id}` - Конкретный рабочий процесс
+36. `/rest/api/3/status` - Все статусы в системе
+
+ Приоритеты
+37. `/rest/api/3/priority` - Все приоритеты задач
+
+ Типы задач
+38. `/rest/api/3/issuetype` - Все типы задач
+39. `/rest/api/3/issuetype/{id}` - Конкретный тип задачи
+
+ Компоненты
+40. `/rest/api/3/component/{id}` - Конкретный компонент
+
+ Версии
+41. `/rest/api/3/version/{id}` - Конкретная версия
+
+ Эпики
+42. `/rest/api/3/issue/{issueIdOrKey}/epic` - Эпик для задачи (если это подзадача эпика)
+
+ Приложения и надстройки
+43. `/rest/api/3/app/properties` - Свойства приложений
+44. `/rest/atlassian-connect/1/app/module/dynamic` - Динамические модули
+
+ Аудитория
+45. `/rest/api/3/auditing/record` - Записи аудита
+
+ Автоматизация
+46. `/rest/api/3/automation/rules` - Правила автоматизации
+47. `/rest/api/3/automation/rule/{id}` - Конкретное правило автоматизации
+
+ Комментарии
+48. `/rest/api/3/comment/{commentId}` - Конкретный комментарий
+
+ Привязки (Attachments)
+49. `/rest/api/3/attachment/{id}` - Конкретное вложение
+
+ Рабочее время (Worklogs)
+50. `/rest/api/3/worklog/{id}` - Конкретный worklog
+
+ Наблюдатели (Watchers)
+51. `/rest/api/3/issue/{issueIdOrKey}/watchers` - Наблюдатели задачи
+
+ Связи задач
+52. `/rest/api/3/issue/{issueIdOrKey}/link` - Связанные задачи
+
+ Роли
+53. `/rest/api/3/role` - Все роли
+54. `/rest/api/3/role/{id}` - Конкретная роль
+
+ Разрешения
+55. `/rest/api/3/permissions` - Все разрешения
+56. `/rest/api/3/permissions/check` - Проверка разрешений
+
+ Настройки
+57. `/rest/api/3/application-properties` - Свойства приложения
+58. `/rest/api/3/configuration` - Конфигурация Jira
+
+ Группы
+59. `/rest/api/3/group` - Поиск групп
+60. `/rest/api/3/group/member` - Члены группы
+
+ Вебхуки
+61. `/rest/api/3/webhook` - Все вебхуки
+62. `/rest/api/3/webhook/{id}` - Конкретный вебхук
+
+ Дашборды
+63. `/rest/api/3/dashboard` - Все дашборды
+64. `/rest/api/3/dashboard/{id}` - Конкретный дашборд
+
+ Tempo (учет времени)
+65. `/rest/tempo-teams/1/team` - Все команды Tempo
+66. `/rest/tempo-timesheets/4/worklogs` - Worklogs Tempo
+
+ Dev Info (разработка)
+67. `/rest/dev-status/1.0/issue/detail` - Информация о разработке для задачи
+68. `/rest/dev-status/1.0/issue/summary` - Сводка по разработке
+

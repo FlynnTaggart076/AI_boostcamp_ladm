@@ -1,0 +1,42 @@
+[
+    {
+        "avatarUrls": {
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium",
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421"
+        },
+        "entityId": "56d5fcd6-3682-4f5a-b962-42917cf2f1fc",
+        "expand": "description,lead,issueTypes,url,projectKeys,permissions,insight",
+        "id": "10000",
+        "isPrivate": false,
+        "key": "SCRUM",
+        "name": "My Software Team",
+        "projectTypeKey": "software",
+        "properties": {},
+        "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+        "simplified": true,
+        "style": "next-gen",
+        "uuid": "56d5fcd6-3682-4f5a-b962-42917cf2f1fc"
+    },
+    {
+        "avatarUrls": {
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10416?size=xsmall",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10416?size=small",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10416?size=medium",
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10416"
+        },
+        "entityId": "b5e2da3e-a094-4467-bd89-9aa383f3b675",
+        "expand": "description,lead,issueTypes,url,projectKeys,permissions,insight",
+        "id": "10033",
+        "isPrivate": false,
+        "key": "AM7",
+        "name": "\u041f\u0443\u043f\u0443\u043f\u0443 7 \u0434\u043d\u0435\u0439 \u0434\u043e \u0444\u0438\u043d\u0430\u043b\u0430",
+        "projectTypeKey": "business",
+        "properties": {},
+        "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10033",
+        "simplified": true,
+        "style": "next-gen",
+        "uuid": "b5e2da3e-a094-4467-bd89-9aa383f3b675"
+    }
+]

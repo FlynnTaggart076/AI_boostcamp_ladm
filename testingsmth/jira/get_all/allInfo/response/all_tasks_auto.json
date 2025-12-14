@@ -1,0 +1,1383 @@
+{
+  "metadata": {
+    "total_tasks": 16,
+    "jql_query": "created >= '2024-12-12' AND created <= '2025-12-12' order by created DESC",
+    "retrieved_at": "2025-12-12 16:39:30",
+    "api_used": "rest/api/3/search/jql",
+    "max_results_requested": 200,
+    "days_back": "custom"
+  },
+  "tasks": [
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10050",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10050",
+      "key": "SCRUM-16",
+      "fields": {
+        "summary": "Удались",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T20:02:15.230+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "accountId": "712020:179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+          },
+          "displayName": "ishchenkomargo05",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T20:02:16.328+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10049",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10049",
+      "key": "SCRUM-15",
+      "fields": {
+        "summary": "Найти портал в рай",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10001",
+          "id": "10001",
+          "description": "Подборка похожих историй, заданий и связанных с ними ошибок.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10307?size=medium",
+          "name": "Эпик",
+          "subtask": false,
+          "avatarId": 10307,
+          "entityId": "1c23cf16-7071-4a7c-9daa-77dc504c9905",
+          "hierarchyLevel": 1
+        },
+        "created": "2025-12-11T19:32:50.580+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "accountId": "712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png"
+          },
+          "displayName": "Кристина Ильичёва",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "accountId": "712020:179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+          },
+          "displayName": "ishchenkomargo05",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:34:53.225+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10048",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10048",
+      "key": "SCRUM-14",
+      "fields": {
+        "summary": "Найти атрибут приделывания (Антон, прости... Не без жертв)",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:30:11.899+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:34:45.081+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10000",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "К выполнению",
+          "id": "10000",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "К выполнению"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10046",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10046",
+      "key": "SCRUM-13",
+      "fields": {
+        "summary": "Достать гвозди",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:29:32.272+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:34:43.302+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10000",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "К выполнению",
+          "id": "10000",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "К выполнению"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10044",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10044",
+      "key": "SCRUM-12",
+      "fields": {
+        "summary": "Достать молоток",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:29:23.211+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:34:41.514+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10000",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "К выполнению",
+          "id": "10000",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "К выполнению"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10042",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10042",
+      "key": "SCRUM-11",
+      "fields": {
+        "summary": "Муравью откусить попу",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10001",
+          "id": "10001",
+          "description": "Подборка похожих историй, заданий и связанных с ними ошибок.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10307?size=medium",
+          "name": "Эпик",
+          "subtask": false,
+          "avatarId": 10307,
+          "entityId": "1c23cf16-7071-4a7c-9daa-77dc504c9905",
+          "hierarchyLevel": 1
+        },
+        "created": "2025-12-11T19:28:43.068+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": null,
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:37:50.875+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10000",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "К выполнению",
+          "id": "10000",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "К выполнению"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10041",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10041",
+      "key": "SCRUM-10",
+      "fields": {
+        "summary": "Проблема и её в этом",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:19:19.656+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "accountId": "712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png"
+          },
+          "displayName": "Кристина Ильичёва",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "accountId": "712020:179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+          },
+          "displayName": "ishchenkomargo05",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:28:55.489+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10040",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10040",
+      "key": "SCRUM-9",
+      "fields": {
+        "summary": "Дать Антону 10000000000 тэнге",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:08:08.961+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3Aec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "accountId": "712020:ec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "24x24": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "16x16": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "32x32": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png"
+          },
+          "displayName": "Anton",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:23:16.048+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10039",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10039",
+      "key": "SCRUM-8",
+      "fields": {
+        "summary": "Дать Антону 10000000 Долларов",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:06:53.270+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3Aec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "accountId": "712020:ec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "24x24": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "16x16": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "32x32": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png"
+          },
+          "displayName": "Anton",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:28:14.732+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10038",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10038",
+      "key": "SCRUM-7",
+      "fields": {
+        "summary": "Н8рио о чем отличается ",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:03:59.445+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "accountId": "712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png"
+          },
+          "displayName": "Кристина Ильичёва",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/4",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/low_new.svg",
+          "name": "Low",
+          "id": "4"
+        },
+        "updated": "2025-12-11T19:04:41.523+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10002",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "Готово",
+          "id": "10002",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/3",
+            "id": 3,
+            "key": "done",
+            "colorName": "green",
+            "name": "Готово"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10037",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10037",
+      "key": "SCRUM-6",
+      "fields": {
+        "summary": "Дать коту мышку",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-11T19:02:59.788+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "accountId": "712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png"
+          },
+          "displayName": "Кристина Ильичёва",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "accountId": "712020:179b4619-922c-4ea9-b55c-e3eb6b56e584",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+          },
+          "displayName": "ishchenkomargo05",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/3",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/medium_new.svg",
+          "name": "Medium",
+          "id": "3"
+        },
+        "updated": "2025-12-11T19:31:31.492+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10004",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10004",
+      "key": "SCRUM-5",
+      "fields": {
+        "summary": "Задача 3",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10004",
+          "id": "10004",
+          "description": "Функции, которые пользователи указывают в качестве целей.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10315?size=medium",
+          "name": "История",
+          "subtask": false,
+          "avatarId": 10315,
+          "entityId": "03d4e1c1-d792-4195-af5f-14ab4dadea4a",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-09T14:16:27.502+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "accountId": "712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png"
+          },
+          "displayName": "Кристина Ильичёва",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/1",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/highest_new.svg",
+          "name": "Highest",
+          "id": "1"
+        },
+        "updated": "2025-12-11T19:06:16.990+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10002",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "Готово",
+          "id": "10002",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/3",
+            "id": 3,
+            "key": "done",
+            "colorName": "green",
+            "name": "Готово"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10003",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10003",
+      "key": "SCRUM-4",
+      "fields": {
+        "summary": "Подзадача 2.1",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10002",
+          "id": "10002",
+          "description": "Subtasks track small pieces of work that are part of a larger task.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10316?size=medium",
+          "name": "Subtask",
+          "subtask": true,
+          "avatarId": 10316,
+          "entityId": "2c1586bd-bc12-478b-bf5b-74087adeddec",
+          "hierarchyLevel": -1
+        },
+        "created": "2025-12-09T14:11:50.304+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": null,
+        "priority": null,
+        "updated": "2025-12-09T15:31:29.724+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10002",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "Готово",
+          "id": "10002",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/3",
+            "id": 3,
+            "key": "done",
+            "colorName": "green",
+            "name": "Готово"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10002",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10002",
+      "key": "SCRUM-3",
+      "fields": {
+        "summary": "Задача 3",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10005",
+          "id": "10005",
+          "description": "A broad piece of functionality.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10314?size=medium",
+          "name": "Feature",
+          "subtask": false,
+          "avatarId": 10314,
+          "entityId": "92937a48-c112-415a-8764-8c7f4e93f1a1",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-09T14:11:49.046+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": null,
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": null,
+        "priority": null,
+        "updated": "2025-12-09T14:11:50.016+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10001",
+          "description": "В данный момент по этой проблеме ведется активная работа назначенным лицом.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "В работе",
+          "id": "10001",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/4",
+            "id": 4,
+            "key": "indeterminate",
+            "colorName": "yellow",
+            "name": "В работе"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10001",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10001",
+      "key": "SCRUM-2",
+      "fields": {
+        "summary": "Задача 2",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10004",
+          "id": "10004",
+          "description": "Функции, которые пользователи указывают в качестве целей.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10315?size=medium",
+          "name": "История",
+          "subtask": false,
+          "avatarId": 10315,
+          "entityId": "03d4e1c1-d792-4195-af5f-14ab4dadea4a",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-09T14:11:48.783+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": {
+          "type": "doc",
+          "version": 1,
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Разбомбить Омэрику"
+                }
+              ]
+            }
+          ]
+        },
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3Aec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "accountId": "712020:ec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "24x24": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "16x16": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "32x32": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png"
+          },
+          "displayName": "Anton",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/1",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/highest_new.svg",
+          "name": "Highest",
+          "id": "1"
+        },
+        "updated": "2025-12-11T19:06:17.581+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10002",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "Готово",
+          "id": "10002",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/3",
+            "id": 3,
+            "key": "done",
+            "colorName": "green",
+            "name": "Готово"
+          }
+        },
+        "labels": []
+      }
+    },
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10000",
+      "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issue/10000",
+      "key": "SCRUM-1",
+      "fields": {
+        "summary": "Артем отчисляйся",
+        "issuetype": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/issuetype/10003",
+          "id": "10003",
+          "description": "Небольшая порция работы.",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+          "name": "Задача",
+          "subtask": false,
+          "avatarId": 10318,
+          "entityId": "8c4dc3a7-f699-47cf-8835-00ab6453428c",
+          "hierarchyLevel": 0
+        },
+        "created": "2025-12-09T14:11:48.231+0300",
+        "project": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/project/10000",
+          "id": "10000",
+          "key": "SCRUM",
+          "name": "My Software Team",
+          "projectTypeKey": "software",
+          "simplified": true,
+          "avatarUrls": {
+            "48x48": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421",
+            "24x24": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=small",
+            "16x16": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=xsmall",
+            "32x32": "https://mavartemkz2007.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10421?size=medium"
+          }
+        },
+        "description": {
+          "type": "doc",
+          "version": 1,
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Отмыть многа деняг"
+                }
+              ]
+            }
+          ]
+        },
+        "reporter": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3Aec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "accountId": "712020:ec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "24x24": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "16x16": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+            "32x32": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png"
+          },
+          "displayName": "Anton",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "assignee": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020%3A6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+          "emailAddress": "mav.artem.kz2007@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+            "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+          },
+          "displayName": "Артём Малышев",
+          "active": true,
+          "timeZone": "Europe/Moscow",
+          "accountType": "atlassian"
+        },
+        "priority": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/priority/1",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/priorities/highest_new.svg",
+          "name": "Highest",
+          "id": "1"
+        },
+        "updated": "2025-12-11T20:03:37.393+0300",
+        "status": {
+          "self": "https://mavartemkz2007.atlassian.net/rest/api/3/status/10000",
+          "description": "",
+          "iconUrl": "https://mavartemkz2007.atlassian.net/images/icons/statuses/generic.png",
+          "name": "К выполнению",
+          "id": "10000",
+          "statusCategory": {
+            "self": "https://mavartemkz2007.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "К выполнению"
+          }
+        },
+        "labels": []
+      }
+    }
+  ]
+}

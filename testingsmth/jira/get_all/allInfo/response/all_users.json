@@ -1,0 +1,72 @@
+[
+  {
+    "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+    "accountId": "712020:6cb68c80-174e-4bee-87b5-6e6cee8fe0c7",
+    "accountType": "atlassian",
+    "emailAddress": "mav.artem.kz2007@gmail.com",
+    "avatarUrls": {
+      "48x48": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+      "24x24": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+      "16x16": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png",
+      "32x32": "https://secure.gravatar.com/avatar/842fa4531d5d6a02da44356c5f3ae0a5?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-2.png"
+    },
+    "displayName": "Артём Малышев",
+    "active": true,
+    "locale": "ru_RU"
+  },
+  {
+    "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+    "accountId": "712020:759f56ed-ed76-4a93-b49e-42d032a5c971",
+    "accountType": "atlassian",
+    "avatarUrls": {
+      "48x48": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+      "24x24": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+      "16x16": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png",
+      "32x32": "https://secure.gravatar.com/avatar/88427e55af246a06fd54d4c4a5ed0a2d?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Fdefault-avatar-5.png"
+    },
+    "displayName": "Кристина Ильичёва",
+    "active": true,
+    "locale": "ru_RU"
+  },
+  {
+    "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020:ec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+    "accountId": "712020:ec48f89c-fec3-47fb-bcc8-7fbea1d82f9c",
+    "accountType": "atlassian",
+    "avatarUrls": {
+      "48x48": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+      "24x24": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+      "16x16": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png",
+      "32x32": "https://secure.gravatar.com/avatar/2f3a3fde4eafb5f92cf121d02472f551?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FA-1.png"
+    },
+    "displayName": "Anton",
+    "active": true,
+    "locale": "ru_RU"
+  },
+  {
+    "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020:179b4619-922c-4ea9-b55c-e3eb6b56e584",
+    "accountId": "712020:179b4619-922c-4ea9-b55c-e3eb6b56e584",
+    "accountType": "atlassian",
+    "avatarUrls": {
+      "48x48": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+      "24x24": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+      "16x16": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+      "32x32": "https://secure.gravatar.com/avatar/624f831793a7acd67e649be2182c1aa8?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+    },
+    "displayName": "ishchenkomargo05",
+    "active": true
+  },
+  {
+    "self": "https://mavartemkz2007.atlassian.net/rest/api/3/user?accountId=712020:e09bc2c1-db2a-43e2-bcc6-dce9ed02c9ee",
+    "accountId": "712020:e09bc2c1-db2a-43e2-bcc6-dce9ed02c9ee",
+    "accountType": "atlassian",
+    "avatarUrls": {
+      "48x48": "https://secure.gravatar.com/avatar/8a50dae2fe1b73ae26e8fee5a0635cbe?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMI-1.png",
+      "24x24": "https://secure.gravatar.com/avatar/8a50dae2fe1b73ae26e8fee5a0635cbe?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMI-1.png",
+      "16x16": "https://secure.gravatar.com/avatar/8a50dae2fe1b73ae26e8fee5a0635cbe?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMI-1.png",
+      "32x32": "https://secure.gravatar.com/avatar/8a50dae2fe1b73ae26e8fee5a0635cbe?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMI-1.png"
+    },
+    "displayName": "Margarita Ishchenko",
+    "active": true,
+    "locale": "ru_RU"
+  }
+]

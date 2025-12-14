@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "total_sprints": 2
+  },
+  "sprints": [
+    {
+      "id": 2,
+      "name": "SCRUM Sprint 0",
+      "state": "active",
+      "originBoardId": 1
+    },
+    {
+      "id": 1,
+      "name": "SCRUM Спринт 1",
+      "state": "future",
+      "originBoardId": 1
+    }
+  ]
+}
