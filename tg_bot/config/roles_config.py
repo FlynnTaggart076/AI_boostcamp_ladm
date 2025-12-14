@@ -1,4 +1,4 @@
-from config.constants import VALID_ROLES  # Импортируем для consistency
+from tg_bot.config.constants import VALID_ROLES  # Импортируем для consistency
 
 # Подвиды работников (worker)
 WORKER_SUBTYPES = {
@@ -55,10 +55,25 @@ ROLE_CATEGORIES = {
     }
 }
 
-def get_role_display_name(role_type):
-    """Получить отображаемое имя роли"""
-    role = ALL_ROLES.get(role_type)
-    return role['display_name'] if role else role_type
+
+def get_role_category(role_type):
+    """Получить категорию роли (worker/CEO)"""
+    # Нормализуем вход
+    if role_type == 'CEO':
+        return 'CEO'
+
+    if role_type in WORKER_SUBTYPES:
+        return 'worker'
+    elif role_type in CEO_SUBTYPES:
+        return 'CEO'
+    else:
+        return None
+
+
+def is_role_in_category(role_type, category):
+    """Проверить, принадлежит ли роль категории"""
+    role_cat = get_role_category(role_type)
+    return role_cat == category
 
 def get_role_description(role_type):
     """Получить описание роли"""
@@ -86,11 +101,11 @@ def is_valid_role(role_type):
     """Проверить, является ли роль валидной"""
     return role_type in VALID_ROLES  # Используем константы для consistency
 
-def get_role_category(role_type):
-    """Получить категорию роли (worker/CEO)"""
-    if role_type in WORKER_SUBTYPES:
-        return 'worker'
-    elif role_type in CEO_SUBTYPES:
-        return 'CEO'  # Заглавными
+def get_roles_by_category(category):
+    """Получить все роли категории"""
+    if category == 'worker':
+        return list(WORKER_SUBTYPES.keys())
+    elif category == 'CEO':
+        return list(CEO_SUBTYPES.keys())
     else:
-        return None
+        return []

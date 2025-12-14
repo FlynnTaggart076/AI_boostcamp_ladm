@@ -3,7 +3,7 @@
 """
 import logging
 from datetime import datetime
-from services.jira_integration import jira_integration
+from tg_bot.services.jira_integration import jira_integration
 
 logger = logging.getLogger(__name__)
 

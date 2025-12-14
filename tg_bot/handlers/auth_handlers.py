@@ -1,8 +1,13 @@
 from telegram.ext import ConversationHandler
 import logging
-from config.constants import AWAITING_PASSWORD, AWAITING_ROLE, AWAITING_JIRA, AWAITING_NAME, REGISTRATION_PASSWORD
-from database.models import UserModel
-from services.jira_handler import process_jira_registration
+from tg_bot.config.constants import AWAITING_PASSWORD, AWAITING_ROLE, AWAITING_JIRA, AWAITING_NAME, REGISTRATION_PASSWORD
+from tg_bot.database.models import UserModel
+from tg_bot.handlers.survey_handlers import handle_survey_response
+from tg_bot.services.jira_handler import process_jira_registration
+from tg_bot.config.texts import (
+    REGISTRATION_TEXTS, AUTH_TEXTS, ROLE_DISPLAY,
+    get_role_display_name, format_registration_complete
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,17 +21,10 @@ async def handle_message(update, context):
             context.user_data['awaiting_password'] = False
             context.user_data['awaiting_name'] = True
 
-            await update.message.reply_text(
-                "✅ Пароль верный!\n\n"
-                "Теперь введите ваше полное имя (ФИО):\n"
-                "Пример: Иванов Иван Иванович\n\n"
-                "Используйте /cancel для отмены."
-            )
+            await update.message.reply_text(REGISTRATION_TEXTS['password_correct'])
             return AWAITING_NAME
         else:
-            await update.message.reply_text(
-                "❌ Неверный пароль. Попробуйте снова или используйте /cancel:"
-            )
+            await update.message.reply_text(REGISTRATION_TEXTS['password_wrong'])
             return AWAITING_PASSWORD
 
     elif context.user_data.get('awaiting_name'):
@@ -43,13 +41,7 @@ async def handle_message(update, context):
         context.user_data['awaiting_jira'] = True
         context.user_data['user_name'] = name
 
-        await update.message.reply_text(
-            "👤 Имя сохранено!\n\n"
-            "Теперь введите ваш Jira аккаунт (email или логин):\n"
-            "Пример: ivan.ivanov@company.com\n"
-            "Или: iivanov\n\n"
-            "Если у вас нет Jira аккаунта, введите 'нет' или пропустите."
-        )
+        await update.message.reply_text(REGISTRATION_TEXTS['name_saved'])
         return AWAITING_JIRA
 
     elif context.user_data.get('awaiting_jira'):
@@ -64,21 +56,8 @@ async def handle_message(update, context):
         context.user_data['awaiting_role'] = True
         context.user_data['jira_account'] = jira_account
 
-        await update.message.reply_text(
-            "📋 Jira account saved!\n\n"
-            "Choose your role:\n"
-            "Available roles (English only):\n"
-            "• worker - basic worker\n"
-            "• CEO - manager (can create surveys)\n"
-            "• team_lead - team leader\n"
-            "• project_manager - project manager\n"
-            "• department_head - department head\n"
-            "• senior_worker - senior worker\n"
-            "• specialist - specialist\n\n"
-            "Enter role name:"
-        )
+        await update.message.reply_text(REGISTRATION_TEXTS['jira_saved'] + "\n\n" + REGISTRATION_TEXTS['role_options'])
         return AWAITING_ROLE
-
 
     elif context.user_data.get('awaiting_role'):
         # Сохраняем роль и регистрируем пользователя
@@ -100,16 +79,7 @@ async def handle_message(update, context):
         elif role_input == 'senior worker':
             role = 'senior_worker'
         else:
-            await update.message.reply_text(
-                "Некорректная роль. Введите одну из:\n"
-                "• worker\n"
-                "• CEO\n"
-                "• team_lead\n"
-                "• project_manager\n"
-                "• department_head\n"
-                "• senior_worker\n"
-                "• specialist"
-            )
+            await update.message.reply_text(REGISTRATION_TEXTS['invalid_role'])
             return AWAITING_ROLE
 
         # Получаем Telegram данные
@@ -177,22 +147,12 @@ async def handle_message(update, context):
             context.user_data['jira_account'] = registered_user['jira_account']
 
             # Показываем успешную регистрацию
-            role_display = {
-                'worker': 'Рабочий',
-                'CEO': 'Руководитель',
-                'team_lead': 'Тимлид',
-                'project_manager': 'Менеджер проектов',
-                'department_head': 'Руководитель отдела',
-                'senior_worker': 'Старший рабочий',
-                'specialist': 'Специалист'
-            }.get(role, role)
-
             await update.message.reply_text(
-                f"Регистрация завершена успешно!\n\n"
-                f"Имя: {registered_user['name']}\n"
-                f"Роль: {role_display}\n"
-                f"Telegram: @{telegram_username}\n\n"
-                f"Используйте /help для списка команд."
+                format_registration_complete(
+                    name=registered_user['name'],
+                    role=role,
+                    username=telegram_username
+                )
             )
         else:
             logger.error(f"Ошибка регистрации пользователя {telegram_username}")
@@ -213,14 +173,11 @@ async def handle_message(update, context):
 
     # Если пользователь авторизован и отвечает на опрос
     elif context.user_data.get('awaiting_survey_response'):
-        from handlers.survey_handlers import handle_survey_response
         return await handle_survey_response(update, context)
 
     else:
         # Пользователь авторизован, но отправил неизвестную команду
-        await update.message.reply_text(
-            "Неизвестная команда. Используйте /help для списка команд."
-        )
+        await update.message.reply_text(AUTH_TEXTS['unknown_command'])
 
 
 async def start_command(update, context):
@@ -233,25 +190,15 @@ async def start_command(update, context):
 
     if user_data:
         # Пользователь уже авторизован
-        # В функции start_command обновить текст
-        role_display = {
-            'worker': 'Worker',
-            'CEO': 'CEO',
-            'team_lead': 'Team Lead',
-            'project_manager': 'Project Manager',
-            'department_head': 'Department Head',
-            'senior_worker': 'Senior Worker',
-            'specialist': 'Specialist'
-        }.get(user_data['role'], user_data['role'])
-
+        role_display = get_role_display_name(user_data['role'])
         jira_info = f"Jira: {user_data['jira_account']}" if user_data['jira_account'] else "📋 Jira: не указан"
 
         await update.message.reply_text(
-            f"Вы уже авторизованы!\n\n"
-            f"{user_data['name']}\n"
-            f"Роль: {role_display}\n"
-            f"{jira_info}\n\n"
-            f"Используйте /help для списка доступных команд."
+            REGISTRATION_TEXTS['already_registered'].format(
+                name=user_data['name'],
+                role=role_display,
+                jira_info=jira_info
+            )
         )
 
         # Сохраняем данные в context
@@ -263,12 +210,7 @@ async def start_command(update, context):
         return ConversationHandler.END
     else:
         # Начинаем процесс регистрации
-        await update.message.reply_text(
-            "Добро пожаловать!\n\n"
-            "Вы не авторизованы в системе.\n"
-            "Для регистрации введите пароль:\n\n"
-            "Используйте /cancel для отмены."
-        )
+        await update.message.reply_text(REGISTRATION_TEXTS['welcome'])
 
         context.user_data['awaiting_password'] = True
 

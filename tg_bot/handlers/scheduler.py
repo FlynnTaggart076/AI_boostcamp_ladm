@@ -3,7 +3,10 @@ import logging
 from datetime import datetime
 from typing import Dict, List
 from telegram import Bot
-from database.models import SurveyModel, UserModel
+
+from tg_bot.config.roles_config import get_role_category
+from tg_bot.database.models import SurveyModel, UserModel
+from tg_bot.config.texts import get_role_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +120,6 @@ class SurveyScheduler:
 
     async def get_target_users(self, survey) -> List[Dict]:
         """Получение целевых пользователей для опроса"""
-        from config.roles_config import get_role_category
 
         if survey['role'] is None:
             # Опрос для всех
@@ -142,22 +144,21 @@ class SurveyScheduler:
             return
 
         # Формируем сообщение
-        from config.roles_config import get_role_display_name
         role_display = get_role_display_name(user['role'])
 
         # Определяем, для кого опрос
         target = survey['role'] if survey['role'] else "all users"
 
         message = (
-            f"New survey from manager!\n\n"
-            f"Question: {survey['question']}\n"
-            f"Your role: {role_display}\n"
-            f"Target audience: {target}\n"
-            f"Date: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-            f"Survey ID: {survey['id_survey']}\n\n"
-            f"To respond, use the command:\n"
+            f"Новый опрос от руководителя!\n\n"
+            f"Вопрос: {survey['question']}\n"
+            f"Ваша роль: {role_display}\n"
+            f"Аудитория: {target}\n"
+            f"Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+            f"ID опроса: {survey['id_survey']}\n\n"
+            f"Чтобы ответить, используйте команду:\n"
             f"/response\n\n"
-            f"Then select this survey from the list."
+            f"Затем выберите этот опрос из списка."
         )
 
         # Отправляем сообщение

@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2 import pool
-from config.settings import config
+from tg_bot.config.settings import config
 import logging
 
 logger = logging.getLogger(__name__)

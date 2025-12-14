@@ -1,15 +1,18 @@
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
-from database.models import SurveyModel, ResponseModel, UserModel
+
+from tg_bot.config.roles_config import get_role_category
+from tg_bot.database.models import SurveyModel, ResponseModel, UserModel
 from datetime import datetime, timedelta
 import re
-from config.constants import (
+from tg_bot.config.constants import (
     AWAITING_SURVEY_QUESTION,
     AWAITING_SURVEY_ROLE,
     AWAITING_SURVEY_TIME,
     AWAITING_SURVEY_SELECTION,
     AWAITING_SURVEY_RESPONSE
 )
+from tg_bot.config.texts import SURVEY_TEXTS
 
 async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка вопроса для опроса"""
@@ -23,19 +26,10 @@ async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_T
 
     context.user_data['survey_question'] = question
 
-    await update.message.reply_text(
-        "Вопрос сохранен!\n\n"
-        "Шаг 2 из 3: Кому отправить опрос?\n\n"
-        "Введите:\n"
-        "• 'all' - всем пользователям\n"
-        "• 'ceo' - только руководителям\n"
-        "• 'worker' - только рабочим\n"
-        "• Или конкретную роль: team_lead, project_manager, department_head, senior_worker, specialist\n\n"
-        "Пример: 'all' или 'worker'\n"
-        "Используйте /cancel для отмены."
-    )
+    await update.message.reply_text(SURVEY_TEXTS['question_saved'])
 
     return AWAITING_SURVEY_ROLE
+
 
 async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отмена ответа на опрос"""
@@ -53,22 +47,18 @@ async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def sendsurvey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Начало создания опроса"""
-    # Проверяем, что пользователь CEO
+
+    # Проверяем, что пользователь из категории руководителей
     user_role = context.user_data.get('user_role')
-    if user_role != 'CEO':
+    role_category = get_role_category(user_role) if user_role else None
+
+    if role_category != 'CEO':
         await update.message.reply_text(
-            "Только руководители (CEO) могут создавать опросы."
+            "Только руководители (CEO, Team Lead, Project Manager и др.) могут создавать опросы."
         )
         return ConversationHandler.END
 
-    await update.message.reply_text(
-        "Создание нового опроса\n\n"
-        "Шаг 1 из 3: Введите вопрос для опроса:\n\n"
-        "Пример: 'Что вы сделали сегодня?'\n"
-        "Или: 'Какие проблемы возникли за неделю?'\n\n"
-        "Используйте /cancel для отмены."
-    )
+    await update.message.reply_text(SURVEY_TEXTS['create_welcome'])
 
     context.user_data['creating_survey'] = True
     return AWAITING_SURVEY_QUESTION
@@ -168,8 +158,7 @@ async def handle_survey_role(update: Update, context: ContextTypes.DEFAULT_TYPE)
         users = UserModel.get_users_by_role(role_for_db)
         if not users:
             await update.message.reply_text(
-                f"Нет пользователей с ролью '{role_input}' с привязанными Telegram аккаунтами.\n"
-                "Выберите другую роль:"
+                SURVEY_TEXTS['no_users_for_role'].format(role=role_input)
             )
             return AWAITING_SURVEY_ROLE
         target_users_count = len(users)
@@ -180,10 +169,7 @@ async def handle_survey_role(update: Update, context: ContextTypes.DEFAULT_TYPE)
         target_users_count = len(users_worker) + len(users_ceo)
 
         if target_users_count == 0:
-            await update.message.reply_text(
-                "Нет пользователей с привязанными Telegram аккаунтами.\n"
-                "Сначала зарегистрируйте пользователей."
-            )
+            await update.message.reply_text(SURVEY_TEXTS['no_users_registered'])
             return AWAITING_SURVEY_ROLE
 
     context.user_data['survey_role'] = role_for_db
@@ -191,15 +177,10 @@ async def handle_survey_role(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data['target_users_count'] = target_users_count
 
     await update.message.reply_text(
-        f"Опрос будет отправлен {target_users_count} пользователям ({role_display}).\n\n"
-        "Шаг 3 из 3: Когда отправить опрос?\n\n"
-        "Введите дату и время в формате:\n"
-        "• 'сегодня 14:30' - сегодня в 14:30\n"
-        "• 'завтра 09:00' - завтра в 9 утра\n"
-        "• '2024-01-20 18:00' - конкретная дата\n"
-        "• 'сейчас' - отправить немедленно\n\n"
-        "Пример: 'завтра 10:00'\n"
-        "Используйте /cancel для отмены."
+        SURVEY_TEXTS['role_saved'].format(
+            count=target_users_count,
+            role_display=role_display
+        )
     )
 
     return AWAITING_SURVEY_TIME
@@ -249,10 +230,7 @@ async def handle_survey_time(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         # Проверяем, что время не в прошлом (кроме "сейчас")
         if time_input != 'сейчас' and survey_datetime < now:
-            await update.message.reply_text(
-                "Время отправки не может быть в прошлом.\n"
-                "Попробуйте снова:"
-            )
+            await update.message.reply_text(SURVEY_TEXTS['past_time'])
             return AWAITING_SURVEY_TIME
 
         # Сохраняем в контекст
@@ -264,12 +242,7 @@ async def handle_survey_time(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     except Exception as e:
         await update.message.reply_text(
-            f"Ошибка распознавания времени: {str(e)}\n"
-            "Попробуйте снова в формате:\n"
-            "• 'сегодня 14:30'\n"
-            "• 'завтра 09:00'\n"
-            "• '2024-01-20 18:00'\n"
-            "• 'сейчас'"
+            SURVEY_TEXTS['invalid_time'].format(error=str(e))
         )
         return AWAITING_SURVEY_TIME
 
@@ -295,12 +268,14 @@ async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE
         schedule_type = context.user_data['schedule_type']
 
         await update.message.reply_text(
-            f"Опрос успешно создан!\n\n"
-            f"ID опроса: {survey_id}\n"
-            f"Вопрос: {context.user_data['survey_question']}\n"
-            f"Получатели: {role_display} ({users_count} чел.)\n"
-            f"Отправка: {schedule_time} ({schedule_type})\n\n"
-            f"Опрос будет отправлен автоматически в указанное время."
+            SURVEY_TEXTS['survey_created'].format(
+                id=survey_id,
+                question=context.user_data['survey_question'],
+                role=role_display,
+                count=users_count,
+                time=schedule_time,
+                type=schedule_type
+            )
         )
 
         # Добавляем опрос в планировщик через bot_data
@@ -318,9 +293,7 @@ async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE
             logger.warning(f"Survey scheduler not available in bot_data for survey {survey_id}")
 
     else:
-        await update.message.reply_text(
-            "Ошибка при создании опроса. Попробуйте снова позже."
-        )
+        await update.message.reply_text(SURVEY_TEXTS['survey_error'])
 
     # Очищаем данные
     for key in ['creating_survey', 'survey_question', 'survey_role',
@@ -343,17 +316,16 @@ async def send_survey_to_users(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Начало ответа на опрос (для рабочих и CEO для отладки)"""
+    """Команда для ответа на опрос (доступна всем)"""
     user_id = context.user_data.get('user_id')
     user_role = context.user_data.get('user_role')
 
-    # РАЗРЕШАЕМ CEO ТОЖЕ ОТВЕЧАТЬ ДЛЯ ОТЛАДКИ
-    if user_role not in ['worker', 'CEO', 'team_lead', 'project_manager', 'department_head', 'senior_worker',
-                         'specialist']:
+    # Опросы доступны всем авторизованным пользователям
+    if not user_role:
         await update.message.reply_text(
-            "Only workers and managers can respond to surveys."
+            "Сначала авторизуйтесь с помощью /start"
         )
-        return
+        return ConversationHandler.END
 
     # Получаем активные опросы для этой роли или для всех
     # 1. Опросы для конкретной роли пользователя
@@ -366,9 +338,7 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     all_active_surveys = active_surveys_for_role + active_surveys_for_all
 
     if not all_active_surveys:
-        await update.message.reply_text(
-            "📭 No active surveys available for response."
-        )
+        await update.message.reply_text(SURVEY_TEXTS['no_active_surveys'])
         return
 
     # Фильтруем опросы, на которые пользователь еще не отвечал
@@ -379,9 +349,7 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             unanswered_surveys.append(survey)
 
     if not unanswered_surveys:
-        await update.message.reply_text(
-            "You have already answered all available surveys."
-        )
+        await update.message.reply_text(SURVEY_TEXTS['all_surveys_answered'])
         return
 
     # Сохраняем список доступных опросов

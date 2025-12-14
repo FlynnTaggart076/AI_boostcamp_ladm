@@ -1,5 +1,6 @@
 from datetime import datetime
-from config.constants import VALID_ROLES  # Добавляем импорт
+from tg_bot.config.constants import VALID_ROLES
+
 
 def validate_date(date_string, date_format="%Y-%m-%d"):
     """Валидация даты"""

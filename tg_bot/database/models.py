@@ -1,6 +1,6 @@
-from config.roles_config import ALL_ROLES
-from config.constants import VALID_ROLES, SURVEY_STATUS
-from database.connection import db_connection  # Абсолютный импорт внутри пакета
+from tg_bot.config.roles_config import ALL_ROLES, ROLE_CATEGORIES
+from tg_bot.config.constants import VALID_ROLES, SURVEY_STATUS
+from tg_bot.database.connection import db_connection  # Абсолютный импорт внутри пакета
 from psycopg2.extras import RealDictCursor
 import logging
 
@@ -148,7 +148,6 @@ class UserModel:
     def get_users_by_role_category(role_category):
         """Получение пользователей по категории ролей (worker или ceo)"""
         # Получаем все роли этой категории из конфига
-        from config.roles_config import ROLE_CATEGORIES
 
         if role_category not in ROLE_CATEGORIES:
             return []

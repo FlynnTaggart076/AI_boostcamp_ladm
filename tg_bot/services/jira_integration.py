@@ -5,7 +5,7 @@ import logging
 import requests
 from typing import Dict, Optional, List
 from datetime import datetime
-from config.settings import config
+from tg_bot.config.settings import config
 
 logger = logging.getLogger(__name__)
 

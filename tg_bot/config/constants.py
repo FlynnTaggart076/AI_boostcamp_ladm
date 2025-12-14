@@ -35,8 +35,13 @@ ROLE_CATEGORIES = {
 
 # Валидные роли для БД
 VALID_ROLES = [
-    'worker', 'CEO', 'team_lead', 'project_manager',
-    'department_head', 'senior_worker', 'specialist'
+    'worker',
+    'CEO',
+    'team_lead',
+    'project_manager',
+    'department_head',
+    'senior_worker',
+    'specialist'
 ]
 
 # Статусы опросов

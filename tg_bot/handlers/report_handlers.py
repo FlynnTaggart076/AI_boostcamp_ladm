@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from database.models import BlockerModel, DailyDigestModel, WeekDigestModel
+from tg_bot.database.models import BlockerModel, DailyDigestModel, WeekDigestModel
 from datetime import datetime, timedelta
-from config.validators import validate_date
+from tg_bot.config.validators import validate_date
 
 
 async def dailydigest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
