@@ -28,3 +28,4 @@ Thumbs.db
 .coverage
 htmlcov/
 .cache/
+/tg_bot/.env
