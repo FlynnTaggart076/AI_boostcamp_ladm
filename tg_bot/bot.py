@@ -1,6 +1,10 @@
 import logging
 import asyncio
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
+
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
+
+from tg_bot.config.roles_config import get_role_category
 from tg_bot.config.settings import config
 from tg_bot.config.constants import (
     AWAITING_PASSWORD,
@@ -121,10 +125,8 @@ async def mysurveys_command(update, context):
     await update.message.reply_text(response)
 
 
-async def syncjira_command(update, context):
+async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Синхронизация данных Jira - только для руководителей"""
-    from tg_bot.config.roles_config import get_role_category
-    from tg_bot.services.jira_loader import sync_jira_data_manually  # НОВЫЙ ИМПОРТ
 
     user_role = context.user_data.get('user_role')
 
@@ -145,30 +147,44 @@ async def syncjira_command(update, context):
 
     # Уведомляем пользователя о начале синхронизации
     await update.message.reply_text(
-        "🔄 Начинаю синхронизацию данных с Jira...\n"
-        "Это может занять несколько минут.\n"
-        "Вы получите уведомление по завершении."
+        "🔄 *Запуск синхронизации данных Jira*\n\n"
+        "Этапы синхронизации:\n"
+        "1. 🧹 Очистка старых данных\n"
+        "2. 👥 Загрузка пользователей\n"
+        "3. 📁 Загрузка проектов\n"
+        "4. 📋 Загрузка досок\n"
+        "5. 🏃 Загрузка спринтов\n"
+        "6. 📝 Загрузка задач\n\n"
+        "⏳ *Это может занять несколько минут...*",
+        parse_mode='Markdown'
     )
 
     try:
-        # Запускаем синхронизацию
-        success = sync_jira_data_manually()
+        # Запускаем синхронизацию с передачей update и context для прогресса
+        import threading
 
-        if success:
-            await update.message.reply_text(
-                "✅ Синхронизация с Jira завершена успешно!\n"
-                "Все проекты, задачи и спринты обновлены."
-            )
-        else:
-            await update.message.reply_text(
-                "❌ Не удалось синхронизировать данные с Jira.\n"
-                "Проверьте подключение к Jira или обратитесь к администратору."
-            )
-    except Exception as e:
-        logger.error(f"Ошибка синхронизации Jira: {e}")
+        # Запускаем в отдельном потоке, чтобы не блокировать бота
+        def sync_thread():
+            success = syncjira_command(update, context)
+            return success
+
+        # Создаем и запускаем поток
+        sync_thread_obj = threading.Thread(target=sync_thread)
+        sync_thread_obj.start()
+
+        # Сообщаем, что синхронизация запущена в фоне
         await update.message.reply_text(
-            "❌ Произошла ошибка при синхронизации.\n"
-            "Попробуйте позже или обратитесь к администратору."
+            "🔧 *Синхронизация запущена в фоновом режиме*\n"
+            "Вы получите уведомление по завершении каждого этапа.",
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        logger.error(f"Ошибка запуска синхронизации Jira: {e}")
+        await update.message.reply_text(
+            "❌ *Не удалось запустить синхронизацию*\n"
+            "Проверьте подключение к Jira или обратитесь к администратору.",
+            parse_mode='Markdown'
         )
 
 
