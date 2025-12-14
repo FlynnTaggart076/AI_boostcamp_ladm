@@ -7,7 +7,7 @@ BOARDS
 DAILY_DIGEST
 "id_daily (integer), datetime (date), text (text), id_report (integer)"
 
-PROJECTS
+REPORTS
 "project_key (character varying), name (character varying), projecttypekey (character varying), jira_name (character varying), jira_email (character varying)"
 
 REPORTS

@@ -10,7 +10,10 @@ from tg_bot.config.constants import (
 )
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.scheduler import SurveyScheduler
-from tg_bot.services.jira_handler import process_jira_registration
+
+# ИМПОРТИРУЕМ НОВЫЙ ЗАГРУЗЧИК
+from tg_bot.services.jira_loader import load_jira_data_on_startup
+
 from tg_bot.config.texts import (
     HELP_TEXTS, PROFILE_TEXTS, JIRA_TEXTS, AUTH_TEXTS,
     get_role_display_name, format_profile, get_category_display
@@ -25,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 async def cancel_command(update, context):
     """Отмена регистрации"""
-    # Очищаем все данные регистрации
     for key in ['awaiting_password', 'awaiting_name', 'awaiting_jira',
                 'awaiting_role', 'user_name', 'jira_account']:
         context.user_data.pop(key, None)
@@ -33,7 +35,6 @@ async def cancel_command(update, context):
     await update.message.reply_text(
         "Регистрация отменена. Используйте /start для повторной попытки."
     )
-
     return ConversationHandler.END
 
 
@@ -45,7 +46,6 @@ async def help_command(update, context):
         await update.message.reply_text(AUTH_TEXTS['not_authorized'])
         return
 
-    # Определяем категорию роли
     from tg_bot.config.roles_config import get_role_category
     role_category = get_role_category(user_role)
 
@@ -53,7 +53,6 @@ async def help_command(update, context):
         await update.message.reply_text(AUTH_TEXTS['unknown_role'])
         return
 
-    # Разные справки для разных категорий ролей
     if role_category == 'CEO':
         help_text = HELP_TEXTS['ceo']
     elif role_category == 'worker':
@@ -93,14 +92,12 @@ async def mysurveys_command(update, context):
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
-    # Пока только для руководителей
     if role_category != 'CEO':
         await update.message.reply_text(
             "Только руководители могут просматривать опросы."
         )
         return
 
-    # Получаем все активные опросы
     from tg_bot.database.models import SurveyModel
     surveys = SurveyModel.get_active_surveys()
 
@@ -111,7 +108,6 @@ async def mysurveys_command(update, context):
         return
 
     response = "Активные опросы:\n\n"
-
     for survey in surveys:
         role_display = survey['role'] if survey['role'] else 'все'
         response += (
@@ -128,6 +124,7 @@ async def mysurveys_command(update, context):
 async def syncjira_command(update, context):
     """Синхронизация данных Jira - только для руководителей"""
     from tg_bot.config.roles_config import get_role_category
+    from tg_bot.services.jira_loader import sync_jira_data_manually  # НОВЫЙ ИМПОРТ
 
     user_role = context.user_data.get('user_role')
 
@@ -146,28 +143,33 @@ async def syncjira_command(update, context):
         )
         return
 
-    user_id = context.user_data.get('user_id')
-    jira_account = context.user_data.get('jira_account')
-    user_name = context.user_data.get('user_name')
-
-    if not jira_account:
-        await update.message.reply_text(JIRA_TEXTS['no_account'])
-        return
-
+    # Уведомляем пользователя о начале синхронизации
     await update.message.reply_text(
-        JIRA_TEXTS['syncing'].format(account=jira_account)
+        "🔄 Начинаю синхронизацию данных с Jira...\n"
+        "Это может занять несколько минут.\n"
+        "Вы получите уведомление по завершении."
     )
 
     try:
-        success = await process_jira_registration(user_id, jira_account, user_name)
+        # Запускаем синхронизацию
+        success = sync_jira_data_manually()
 
         if success:
-            await update.message.reply_text(JIRA_TEXTS['success'])
+            await update.message.reply_text(
+                "✅ Синхронизация с Jira завершена успешно!\n"
+                "Все проекты, задачи и спринты обновлены."
+            )
         else:
-            await update.message.reply_text(JIRA_TEXTS['error'])
+            await update.message.reply_text(
+                "❌ Не удалось синхронизировать данные с Jira.\n"
+                "Проверьте подключение к Jira или обратитесь к администратору."
+            )
     except Exception as e:
         logger.error(f"Ошибка синхронизации Jira: {e}")
-        await update.message.reply_text(JIRA_TEXTS['sync_error'])
+        await update.message.reply_text(
+            "❌ Произошла ошибка при синхронизации.\n"
+            "Попробуйте позже или обратитесь к администратору."
+        )
 
 
 def role_required(allowed_categories):
@@ -181,7 +183,6 @@ def role_required(allowed_categories):
                 await update.message.reply_text(AUTH_TEXTS['not_authorized'])
                 return
 
-            # Получаем категорию роли
             from tg_bot.config.roles_config import get_role_category
             role_category = get_role_category(user_role)
 
@@ -209,7 +210,6 @@ def role_required(allowed_categories):
 def main():
     """Основная функция запуска бота"""
     application = Application.builder().token(config.BOT_TOKEN).build()
-
     logger.info("Запуск бота...")
 
     # Проверка подключения к БД
@@ -222,6 +222,31 @@ def main():
     else:
         logger.error("❌ Не удалось подключиться к БД")
         return
+
+    # НОВЫЙ БЛОК: Загрузка данных Jira при старте (если включено)
+    if config.JIRA_URL and config.JIRA_SYNC_ON_START:
+        logger.info("🔄 Запуск загрузки данных Jira при старте...")
+        try:
+            # Запускаем синхронизацию синхронно (это блокирующая операция)
+            from tg_bot.services.jira_loader import load_jira_data_on_startup
+            success = load_jira_data_on_startup(clear_old=config.JIRA_CLEAR_OLD_DATA)
+
+            if success:
+                logger.info("✅ Данные Jira успешно загружены при старте")
+            else:
+                logger.warning("⚠️ Загрузка данных Jira завершилась с ошибками")
+                logger.warning("Бот продолжит работу без полных данных Jira")
+
+        except Exception as e:
+            logger.error(f"❌ Критическая ошибка при загрузке Jira: {e}")
+            logger.warning("Бот продолжит работу без данных Jira")
+    else:
+        if not config.JIRA_URL:
+            logger.info("⚠️ Jira URL не указан, пропускаем загрузку данных")
+        elif not config.JIRA_SYNC_ON_START:
+            logger.info("⚠️ JIRA_SYNC_ON_START=false, пропускаем загрузку данных")
+        else:
+            logger.info("⚠️ Загрузка данных Jira отключена")
 
     # Инициализируем планировщик и сохраняем в bot_data
     survey_scheduler = SurveyScheduler(application.bot)
@@ -253,19 +278,18 @@ def main():
         per_chat=True
     )
 
-    # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ В ПРАВИЛЬНОМ ПОРЯДКЕ
-    # 1. Сначала ConversationHandler'ы (они более специфичные)
+    # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ
     application.add_handler(registration_handler)
-    application.add_handler(survey_creation_conversation)  # Для создания опросов
-    application.add_handler(survey_response_conversation)  # Для ответов на опросы
+    application.add_handler(survey_creation_conversation)
+    application.add_handler(survey_response_conversation)
 
-    # 2. Затем обычные CommandHandler'ы
+    # Команды
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("profile", profile_command))
     application.add_handler(CommandHandler("mysurveys", mysurveys_command))
     application.add_handler(CommandHandler("syncjira", syncjira_command))
 
-    @role_required(['CEO'])  # Теперь проверяем категорию, а не конкретную роль
+    @role_required(['CEO'])
     async def dailydigest_wrapper(update, context):
         return await dailydigest_command(update, context)
 
@@ -277,10 +301,6 @@ def main():
     async def blockers_wrapper(update, context):
         return await blockers_command(update, context)
 
-    @role_required(['CEO'])
-    async def syncjira_wrapper(update, context):
-        return await syncjira_command(update, context)
-
     @role_required(['worker', 'CEO'])
     async def response_command_wrapper(update, context):
         from tg_bot.handlers.survey_handlers import response_command
@@ -290,9 +310,8 @@ def main():
     application.add_handler(CommandHandler("weeklydigest", weeklydigest_wrapper))
     application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
-    application.add_handler(CommandHandler("syncjira", syncjira_wrapper))
 
-    # 3. В самом конце общий обработчик текстовых сообщений
+    # Общий обработчик текстовых сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Запускаем планировщик при старте бота
@@ -305,6 +324,7 @@ def main():
     task = loop.create_task(startup())
 
     # Запускаем бота
+    logger.info("✅ Бот готов к работе")
     application.run_polling(drop_pending_updates=True)
 
 

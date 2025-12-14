@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import logging
+
 load_dotenv()
 logger = logging.getLogger(__name__)
 
@@ -20,18 +21,25 @@ class Config:
                 if not getattr(self, var):
                     logger.warning(f"⚠️ Jira переменная {var} не установлена")
 
-
+    # Бот и БД
     BOT_TOKEN = os.getenv("BOT_TOKEN", "8344653349:AAEVxNJr12XDg2UvEOmWW4PzCllM_U3AFX8")
-
     DB_HOST = os.getenv("DB_HOST", "172.24.7.12")
     DB_PORT = os.getenv("DB_PORT", "5432")
     DB_NAME = os.getenv("DB_NAME", "ladm")
     DB_USER = os.getenv("DB_USER", "postgres")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "fpWemPBaTESWv1tIsnej")
 
+    # Jira настройки
     JIRA_URL = os.getenv("JIRA_URL")
     JIRA_EMAIL = os.getenv("JIRA_EMAIL")
     JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN")
     JIRA_PROJECT_KEY = os.getenv("JIRA_PROJECT_KEY")
+
+    # НОВЫЕ: Управление загрузкой Jira
+    JIRA_SYNC_ON_START = os.getenv("JIRA_SYNC_ON_START", "true").lower() == "true"
+    JIRA_SYNC_DAYS_BACK = int(os.getenv("JIRA_SYNC_DAYS_BACK", "365"))
+    JIRA_CLEAR_OLD_DATA = os.getenv("JIRA_CLEAR_OLD_DATA", "false").lower() == "true"
+    JIRA_MAX_TASKS = int(os.getenv("JIRA_MAX_TASKS", "1000"))
+
 
 config = Config()
