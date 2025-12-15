@@ -91,9 +91,9 @@ class JiraLoader:
             return False
 
     def load_users(self) -> bool:
-        """Загрузка всех пользователей из Jira в таблицу users"""
+        """Загрузка всех пользователей из Jira в таблицу users - ТОЛЬКО atlassian аккаунты"""
         try:
-            logger.info("Загрузка пользователей из Jira...")
+            logger.info("Загрузка пользователей из Jira (только atlassian аккаунты)...")
 
             url = f"{self.base_url}/rest/api/3/users/search"
             all_users = []
@@ -119,8 +119,12 @@ class JiraLoader:
                     if not users_batch:
                         break
 
-                    all_users.extend(users_batch)
-                    logger.info(f"Загружено пользователей: {len(users_batch)} (всего: {len(all_users)})")
+                    # Фильтруем только atlassian аккаунты
+                    atlassian_users = [user for user in users_batch if user.get('accountType') == 'atlassian']
+                    all_users.extend(atlassian_users)
+
+                    logger.info(
+                        f"Загружено пользователей: {len(users_batch)} (atlassian: {len(atlassian_users)}, всего atlassian: {len(all_users)})")
 
                     if len(users_batch) < max_results:
                         break
@@ -132,6 +136,7 @@ class JiraLoader:
 
             # Сохраняем пользователей в БД
             saved_count = 0
+            skipped_count = 0
             for user in all_users:
                 if user.get('active', False):  # Только активных пользователей
                     user_data = {
@@ -143,8 +148,13 @@ class JiraLoader:
                     user_id = UserModel.save_jira_user(user_data)
                     if user_id:
                         saved_count += 1
+                    else:
+                        skipped_count += 1
+                else:
+                    skipped_count += 1
+                    logger.debug(f"Пропущен неактивный пользователь: {user.get('displayName')}")
 
-            logger.info(f"Пользователей сохранено в БД: {saved_count}/{len(all_users)}")
+            logger.info(f"Пользователей сохранено в БД: {saved_count}/{len(all_users)} (пропущено: {skipped_count})")
             return True
 
         except Exception as e:
@@ -152,10 +162,9 @@ class JiraLoader:
             return False
 
     def load_projects(self) -> bool:
-        """Загрузка всех проектов из Jira"""
+        """Загрузка всех проектов из Jira - исправленная версия"""
         try:
             logger.info("Загрузка проектов из Jira...")
-
             url = f"{self.base_url}/rest/api/3/project/search"
 
             response = requests.get(
@@ -169,23 +178,21 @@ class JiraLoader:
                 data = response.json()
                 projects = data.get('values', [])
 
-                # Сохраняем проекты в БД
                 saved_count = 0
                 for project in projects:
                     project_key = project.get('key', '')
                     project_name = project.get('name', '')
 
-                    if project_key:  # Проверяем, что ключ проекта существует
+                    if project_key:
+                        # Упрощенный запрос БЕЗ jira_name и jira_email
                         query = '''
                         INSERT INTO projects 
-                        (project_key, name, projecttypekey, jira_name, jira_email)
-                        VALUES (%s, %s, %s, %s, %s)
+                        (project_key, name, projecttypekey)
+                        VALUES (%s, %s, %s)
                         ON CONFLICT (project_key) 
                         DO UPDATE SET
                             name = EXCLUDED.name,
-                            projecttypekey = EXCLUDED.projecttypekey,
-                            jira_name = EXCLUDED.jira_name,
-                            jira_email = EXCLUDED.jira_email;
+                            projecttypekey = EXCLUDED.projecttypekey;
                         '''
 
                         connection = db_connection.get_connection()
@@ -195,12 +202,11 @@ class JiraLoader:
                                 cursor.execute(query, (
                                     project_key,
                                     project_name,
-                                    project.get('projectTypeKey'),
-                                    project.get('lead', {}).get('displayName'),
-                                    project.get('lead', {}).get('emailAddress')
+                                    project.get('projectTypeKey', 'software')
                                 ))
                                 connection.commit()
                                 saved_count += 1
+                                logger.debug(f"Проект сохранен: {project_key}")
                             except Exception as e:
                                 logger.error(f"Ошибка сохранения проекта {project_key}: {e}")
                                 connection.rollback()
@@ -347,18 +353,18 @@ class JiraLoader:
                             sprint_name = sprint.get('name', '')
 
                             if sprint_id and sprint_name:
+                                # ИСПРАВЛЕННЫЙ запрос - используем finish_date вместо end_date
                                 query = '''
                                 INSERT INTO sprints 
-                                (id_sprint, state, start_date, name, id_board, jira_name, jira_email)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                (id_sprint, state, start_date, finish_date, name, id_board)
+                                VALUES (%s, %s, %s, %s, %s, %s)
                                 ON CONFLICT (id_sprint) 
                                 DO UPDATE SET
                                     state = EXCLUDED.state,
                                     start_date = EXCLUDED.start_date,
+                                    finish_date = EXCLUDED.finish_date,
                                     name = EXCLUDED.name,
-                                    id_board = EXCLUDED.id_board,
-                                    jira_name = EXCLUDED.jira_name,
-                                    jira_email = EXCLUDED.jira_email;
+                                    id_board = EXCLUDED.id_board;
                                 '''
 
                                 connection = db_connection.get_connection()
@@ -367,12 +373,11 @@ class JiraLoader:
                                         cursor = connection.cursor()
                                         cursor.execute(query, (
                                             sprint_id,
-                                            sprint.get('state'),
+                                            sprint.get('state', ''),
                                             sprint.get('startDate'),
+                                            sprint.get('endDate'),  # Это из Jira, сохраняем как finish_date
                                             sprint_name,
-                                            board_id,
-                                            sprint.get('lead', {}).get('displayName'),
-                                            sprint.get('lead', {}).get('emailAddress')
+                                            board_id
                                         ))
                                         connection.commit()
                                         total_saved += 1
@@ -399,34 +404,38 @@ class JiraLoader:
             return False
 
     def load_tasks(self, days_back: int = 365) -> bool:
-        """Загрузка задач из Jira (за последние N дней)"""
+        """Загрузка задач из Jira (за последние N дней) - исправленная версия с обработкой как в tasks_all.py"""
         try:
             logger.info("Загрузка задач из Jira...")
 
-            # JQL запрос для задач за последние N дней
-            jql = f'created >= -{days_back}d order by created DESC'
-
+            # ИСПРАВЛЕННЫЙ URL и метод как в tasks_all.py
             url = f"{self.base_url}/rest/api/3/search/jql"
+
+            # JQL запрос как в tasks_all.py
+            from datetime import datetime, timedelta
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            jql = f"created >= '{start_date}' AND created <= '{end_date}' order by created DESC"
 
             all_tasks = []
             start_at = 0
             max_results = 100
-            max_total = 1000  # Максимум задач для загрузки
+            max_total = 1000
 
             while len(all_tasks) < max_total:
-                payload = {
-                    'jql': jql,
-                    'startAt': start_at,
-                    'maxResults': max_results,
-                    'fields': ['key', 'summary', 'project', 'status', 'assignee',
-                               'reporter', 'priority', 'issuetype', 'sprint', 'created']
+                # Поля как в tasks_all.py
+                params = {
+                    "jql": jql,
+                    "startAt": start_at,
+                    "maxResults": max_results,
+                    "fields": "summary,status,assignee,reporter,created,updated,priority,issuetype,project,labels,description,customfield_10020,key"
                 }
 
-                response = requests.post(
+                response = requests.get(
                     url,
                     headers=self.headers,
                     auth=self.auth,
-                    json=payload,
+                    params=params,
                     timeout=30
                 )
 
@@ -447,6 +456,7 @@ class JiraLoader:
                     start_at += max_results
                 else:
                     logger.error(f"Ошибка получения задач: {response.status_code}")
+                    logger.error(f"Ответ: {response.text[:200]}")
                     return False
 
             # Сохраняем задачи в БД
@@ -461,29 +471,51 @@ class JiraLoader:
 
                     fields = task.get('fields', {})
 
-                    # Определяем ID спринта
+                    # Определяем ID спринта из customfield_10020 как в tasks_all.py
                     id_sprint = None
-                    sprint_data = fields.get('sprint')
-                    if sprint_data:
-                        if isinstance(sprint_data, list) and sprint_data:
-                            id_sprint = sprint_data[0].get('id')
-                        elif isinstance(sprint_data, dict):
-                            id_sprint = sprint_data.get('id')
+                    customfield = fields.get('customfield_10020')
 
-                    # Определяем ID пользователя (assignee)
-                    id_user = None
-                    assignee = fields.get('assignee')
-                    if assignee and assignee.get('emailAddress'):
-                        # Пытаемся найти пользователя в БД по email
-                        user = UserModel.get_user_by_jira_email(assignee['emailAddress'])
-                        if user:
-                            id_user = user.get('id_user')
+                    if customfield:
+                        if isinstance(customfield, list) and len(customfield) > 0:
+                            last_sprint = customfield[-1]
+                            if isinstance(last_sprint, dict):
+                                id_sprint = last_sprint.get('id')
+                            elif isinstance(last_sprint, str):
+                                import re
+                                match = re.search(r'@(\d+)\[', last_sprint)
+                                if match:
+                                    try:
+                                        id_sprint = int(match.group(1))
+                                    except:
+                                        id_sprint = None
+                        elif isinstance(customfield, dict):
+                            id_sprint = customfield.get('id')
 
+                    # Получаем данные с обработкой null как в tasks_all.py
+                    summary = fields.get('summary', '')
+                    priority_name = fields.get('priority', {}).get('name', '') if fields.get('priority') else ''
+                    project_key = fields.get('project', {}).get('key', '') if fields.get('project') else ''
+                    reporter_name = fields.get('reporter', {}).get('displayName', '') if fields.get('reporter') else ''
+                    assignee_name = fields.get('assignee', {}).get('displayName', '') if fields.get('assignee') else ''
+                    issue_type = fields.get('issuetype', {}).get('name', '') if fields.get('issuetype') else ''
+                    hierarchylevel = fields.get('issuetype', {}).get('hierarchyLevel', 0) if fields.get(
+                        'issuetype') else 0
+                    status_key = fields.get('status', {}).get('statusCategory', {}).get('key', '') if fields.get(
+                        'status', {}).get('statusCategory') else ''
+
+                    # Конвертируем hierarchylevel
+                    if hierarchylevel is not None:
+                        try:
+                            hierarchylevel = int(hierarchylevel)
+                        except:
+                            hierarchylevel = 0
+
+                    # ИСПРАВЛЕННЫЙ запрос с обработкой DEFAULT значений для NULL
                     query = '''
                     INSERT INTO tasks 
                     (id_task, task_key, summary, priority_name, project_key, reporter_name, 
-                     assignee_name, issue_type, hierarchylevel, status_key, id_sprint, id_user)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     assignee_name, issue_type, hierarchylevel, status_key, id_sprint)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id_task) 
                     DO UPDATE SET
                         task_key = EXCLUDED.task_key,
@@ -495,8 +527,7 @@ class JiraLoader:
                         issue_type = EXCLUDED.issue_type,
                         hierarchylevel = EXCLUDED.hierarchylevel,
                         status_key = EXCLUDED.status_key,
-                        id_sprint = EXCLUDED.id_sprint,
-                        id_user = EXCLUDED.id_user;
+                        id_sprint = EXCLUDED.id_sprint;
                     '''
 
                     connection = db_connection.get_connection()
@@ -506,19 +537,19 @@ class JiraLoader:
                             cursor.execute(query, (
                                 task_id,
                                 task_key,
-                                fields.get('summary', ''),
-                                fields.get('priority', {}).get('name'),
-                                fields.get('project', {}).get('key', ''),
-                                fields.get('reporter', {}).get('displayName'),
-                                fields.get('assignee', {}).get('displayName'),
-                                fields.get('issuetype', {}).get('name'),
-                                0,  # hierarchylevel - по умолчанию 0
-                                fields.get('status', {}).get('name'),
-                                id_sprint,
-                                id_user
+                                summary,
+                                priority_name if priority_name else '',  # Пустая строка вместо None
+                                project_key,
+                                reporter_name,
+                                assignee_name if assignee_name else '',  # Пустая строка вместо None
+                                issue_type,
+                                hierarchylevel,
+                                status_key,
+                                id_sprint  # Может быть NULL
                             ))
                             connection.commit()
                             saved_count += 1
+                            logger.debug(f"Задача сохранена: {task_key} (спринт: {id_sprint})")
                         except Exception as e:
                             logger.error(f"Ошибка сохранения задачи {task_key}: {e}")
                             connection.rollback()

@@ -334,14 +334,14 @@ def main():
         await survey_scheduler.start()
         logger.info("✅ Планировщик опросов запущен")
 
-    # Создаем и запускаем задачу для планировщика
-    loop = asyncio.get_event_loop()
+    # Исправленная строка - используем asyncio.new_event_loop() вместо get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     task = loop.create_task(startup())
 
     # Запускаем бота
     logger.info("✅ Бот готов к работе")
     application.run_polling(drop_pending_updates=True)
-
 
 if __name__ == '__main__':
     main()

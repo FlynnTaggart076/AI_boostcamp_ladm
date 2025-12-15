@@ -113,11 +113,11 @@ class UserModel:
 
         query = '''
         INSERT INTO users 
-        (name, tg_username, tg_id, role, jira_name, jira_email)
+        (user_name, tg_username, tg_id, role, jira_name, jira_email)  -- ИЗМЕНИТЕ 'name' на 'user_name'
         VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (tg_username) 
         DO UPDATE SET
-            name = EXCLUDED.name,
+            user_name = EXCLUDED.user_name,  -- ИЗМЕНИТЕ 'name' на 'user_name'
             tg_id = EXCLUDED.tg_id,
             role = EXCLUDED.role,
             jira_name = EXCLUDED.jira_name,
@@ -146,10 +146,13 @@ class UserModel:
 
     @staticmethod
     def update_existing_jira_user(user_id, telegram_username, tg_id, role, name):
-        """Обновление существующего пользователя Jira при регистрации в Telegram - ИСПОЛЬЗУЕТСЯ"""
+        """Обновление существующего пользователя Jira при регистрации в Telegram"""
         query = '''
         UPDATE users 
-        SET tg_username = %s, tg_id = %s, role = %s, name = %s
+        SET tg_username = %s, 
+            tg_id = %s, 
+            role = %s, 
+            user_name = %s  -- ИЗМЕНИТЕ 'name' на 'user_name'
         WHERE id_user = %s
         RETURNING id_user;
         '''
@@ -274,36 +277,119 @@ class UserModel:
 
     @staticmethod
     def save_jira_user(jira_user_data):
-        """Сохранение пользователя из Jira при загрузке данных - ИСПОЛЬЗУЕТСЯ при запуске"""
-        query = '''
-        INSERT INTO users 
-        (jira_name, jira_email)
-        VALUES (%s, %s)
-        ON CONFLICT (jira_email) 
-        DO UPDATE SET
-            jira_name = EXCLUDED.jira_name
-        RETURNING id_user;
-        '''
+        """Сохранение пользователя из Jira с поиском свободных ID"""
+        jira_email = jira_user_data.get('jira_email')
+        jira_name = jira_user_data.get('jira_name')
+
+        if not jira_email and not jira_name:
+            logger.warning("Jira user has no email or name, skipping")
+            return None
+
         connection = db_connection.get_connection()
         if not connection:
             return None
+
         try:
             cursor = connection.cursor()
-            cursor.execute(query, (
-                jira_user_data.get('jira_name'),
-                jira_user_data.get('jira_email')
-            ))
-            user_id = cursor.fetchone()[0]
+
+            # 1. Пытаемся найти существующего пользователя
+            existing_user_id = None
+
+            if jira_email:
+                check_query = "SELECT id_user FROM users WHERE jira_email = %s"
+                cursor.execute(check_query, (jira_email,))
+                result = cursor.fetchone()
+                if result:
+                    existing_user_id = result[0]
+
+            if not existing_user_id and jira_name:
+                check_query = "SELECT id_user FROM users WHERE jira_name = %s AND jira_email IS NULL"
+                cursor.execute(check_query, (jira_name,))
+                result = cursor.fetchone()
+                if result:
+                    existing_user_id = result[0]
+
+            if existing_user_id:
+                # 2. Обновляем существующего пользователя
+                update_fields = []
+                update_values = []
+
+                if jira_name:
+                    update_fields.append("jira_name = %s")
+                    update_values.append(jira_name)
+
+                if jira_email:
+                    update_fields.append("jira_email = %s")
+                    update_values.append(jira_email)
+
+                if update_fields:
+                    update_values.append(existing_user_id)
+                    update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id_user = %s"
+                    cursor.execute(update_query, update_values)
+
+                logger.debug(f"Jira user updated: {jira_name or jira_email}")
+                user_id = existing_user_id
+            else:
+                # 3. Ищем свободный ID
+                cursor.execute("""
+                    WITH used_ids AS (
+                        SELECT id_user FROM users 
+                        WHERE id_user <= (SELECT COALESCE(MAX(id_user), 0) FROM users)
+                    ),
+                    all_ids AS (
+                        SELECT generate_series(1, (SELECT COALESCE(MAX(id_user), 0) + 1 FROM users)) as id
+                    ),
+                    free_ids AS (
+                        SELECT a.id 
+                        FROM all_ids a 
+                        LEFT JOIN used_ids u ON a.id = u.id_user 
+                        WHERE u.id_user IS NULL 
+                        ORDER BY a.id 
+                        LIMIT 1
+                    )
+                    SELECT id FROM free_ids
+                    UNION
+                    SELECT (SELECT COALESCE(MAX(id_user), 0) + 1 FROM users)
+                    ORDER BY id
+                    LIMIT 1
+                """)
+
+                free_id_result = cursor.fetchone()
+                next_id = free_id_result[0] if free_id_result else 1
+
+                insert_query = """
+                    INSERT INTO users (id_user, jira_name, jira_email, user_name)  -- ДОБАВЬТЕ user_name
+                    VALUES (%s, %s, %s, %s)  -- ДОБАВЬТЕ 4-й параметр
+                    ON CONFLICT (id_user) 
+                    DO UPDATE SET
+                        jira_name = EXCLUDED.jira_name,
+                        jira_email = EXCLUDED.jira_email,
+                        user_name = EXCLUDED.user_name  -- ДОБАВЬТЕ эту строку
+                    RETURNING id_user;
+                    """
+
+                cursor.execute(insert_query, (
+                    next_id,
+                    jira_name if jira_name else None,
+                    jira_email if jira_email else None,
+                    jira_name if jira_name else None  # ДОБАВЬТЕ - используем jira_name как user_name
+                ))
+                user_id = cursor.fetchone()[0]
+                logger.debug(f"Jira user created with ID {next_id}: {jira_name or jira_email}")
+
             connection.commit()
-            logger.debug(f"Пользователь Jira сохранен: {jira_user_data.get('jira_name')}")
             return user_id
+
         except Exception as e:
-            logger.error(f"Ошибка сохранения пользователя Jira: {e}")
-            connection.rollback()
+            logger.error(f"Error saving Jira user: {e}")
+            if connection:
+                connection.rollback()
             return None
         finally:
-            cursor.close()
-            connection.close()
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
 
 
 class SurveyModel:

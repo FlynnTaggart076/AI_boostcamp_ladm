@@ -1,6 +1,8 @@
 import os
 import logging
+from dotenv import load_dotenv
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 
@@ -20,12 +22,12 @@ class Config:
                     logger.warning(f"⚠️ Jira переменная {var} не установлена")
 
     # Бот и БД
-    BOT_TOKEN = os.getenv("BOT_TOKEN", "8344653349:AAEVxNJr12XDg2UvEOmWW4PzCllM_U3AFX8")
-    DB_HOST = os.getenv("DB_HOST", "172.24.7.12")
-    DB_PORT = os.getenv("DB_PORT", "5432")
-    DB_NAME = os.getenv("DB_NAME", "ladm")
-    DB_USER = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "fpWemPBaTESWv1tIsnej")
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
 
     # Jira настройки
     JIRA_URL = os.getenv("JIRA_URL")
