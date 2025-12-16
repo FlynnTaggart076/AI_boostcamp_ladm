@@ -10,6 +10,7 @@ class DatabaseConnection:
     """Управление подключениями к БД"""
 
     _connection_pool = None
+    _initialized = False  # Флаг для отслеживания инициализации
 
     def __init__(self):
         # TODO: реализовать connection pool для лучшей производительности
@@ -19,6 +20,15 @@ class DatabaseConnection:
         self.user = config.DB_USER
         self.password = config.DB_PASSWORD
         self.port = config.DB_PORT
+
+        # Логируем параметры подключения только при инициализации
+        if not self._initialized:
+            logger.info(f"Параметры подключения к БД:")
+            logger.info(f"  Хост: {self.host}")
+            logger.info(f"  База данных: {self.database}")
+            logger.info(f"  Пользователь: {self.user}")
+            logger.info(f"  Порт: {self.port}")
+            self._initialized = True
 
     def get_connection(self):
         """Создание подключения к БД"""
@@ -31,7 +41,8 @@ class DatabaseConnection:
                 port=self.port,
                 connect_timeout=10
             )
-            logger.info(f"✅ Успешное подключение к БД: {self.database}@{self.host}")
+            # Убрали логирование успешного подключения при каждом вызове
+            # Теперь логируется только один раз при инициализации
             return connection
         except Exception as e:
             logger.error(f"❌ Ошибка подключения к БД: {e}")
