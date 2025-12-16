@@ -123,7 +123,7 @@ async def mysurveys_command(update, context):
 
 
 async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Синхронизация данных Jira - только для руководителей"""
+    """Синхронизация данных Jira - работает в фоне"""
 
     user_role = context.user_data.get('user_role')
 
@@ -142,40 +142,65 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    try:
-        # Отправляем одно начальное сообщение
-        message = await update.message.reply_text(
-            "🔄 *Запуск синхронизации данных Jira...*\n\n"
-            "⏳ *Это может занять несколько минут...*",
-            parse_mode='Markdown'
-        )
+    # Отправляем начальное сообщение
+    message = await update.message.reply_text(
+        "🔄 *Запуск синхронизации данных Jira...*\n\n"
+        "⏳ *Это может занять несколько минут.*\n"
+        "✅ *Вы можете продолжать использовать бота!*",
+        parse_mode='Markdown'
+    )
 
-        from tg_bot.services.jira_loader import jira_loader
+    # Получаем текущий event loop
+    import asyncio
+    loop = asyncio.get_event_loop()
 
-        jira_loader.clear_old_data()
+    # Запускаем синхронизацию в отдельном потоке
+    def sync_in_thread():
+        try:
+            from tg_bot.services.jira_loader import jira_loader
 
-        success = jira_loader.load_all_data()
+            # Синхронные операции в отдельном потоке
+            jira_loader.clear_old_data()
+            success = jira_loader.load_all_data()
 
-        if success:
-            await message.edit_text(
-                "✅ *Синхронизация завершена успешно!*\n\n"
-                "Все данные Jira обновлены.",
-                parse_mode='Markdown'
-            )
-        else:
-            await message.edit_text(
-                "❌ *Синхронизация завершена с ошибками*\n\n"
-                "Проверьте логи для подробностей.",
-                parse_mode='Markdown'
-            )
+            # Используем asyncio.run_coroutine_threadsafe для отправки результата
+            async def send_result():
+                if success:
+                    await message.edit_text(
+                        "✅ *Синхронизация завершена успешно!*\n\n"
+                        "Все данные Jira обновлены.",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    await message.edit_text(
+                        "❌ *Синхронизация завершена с ошибками*",
+                        parse_mode='Markdown'
+                    )
 
-    except Exception as e:
-        logger.error(f"Ошибка синхронизации Jira: {e}")
-        await update.message.reply_text(
-            f"❌ *Не удалось запустить синхронизацию*\n"
-            f"Ошибка: {str(e)[:200]}",
-            parse_mode='Markdown'
-        )
+            # Отправляем задачу в основной event loop
+            asyncio.run_coroutine_threadsafe(send_result(), loop)
+
+        except Exception as e:
+            logger.error(f"Ошибка синхронизации в потоке: {e}")
+
+            # Отправляем сообщение об ошибке
+            async def send_error():
+                await message.edit_text(
+                    f"❌ *Ошибка синхронизации:*\n{str(e)[:200]}",
+                    parse_mode='Markdown'
+                )
+
+            asyncio.run_coroutine_threadsafe(send_error(), loop)
+
+    # Запускаем поток
+    import threading
+    thread = threading.Thread(target=sync_in_thread, daemon=True)
+    thread.start()
+
+    # Сохраняем информацию о запущенной синхронизации
+    context.user_data['jira_sync_in_progress'] = True
+    context.user_data['jira_sync_message'] = message
+    context.user_data['jira_sync_thread'] = thread
 
 
 def role_required(allowed_categories):
