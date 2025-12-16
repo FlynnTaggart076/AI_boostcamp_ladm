@@ -315,16 +315,15 @@ async def start_command(update, context):
 
         await update.message.reply_text(
             REGISTRATION_TEXTS['already_registered'].format(
-                name=user_data['name'],
+                name=user_data['user_name'],
                 role=role_display,
                 jira_info=jira_info
             )
         )
 
-        # Сохраняем данные в context
         context.user_data['user_role'] = user_data['role']
         context.user_data['user_id'] = user_data['id_user']
-        context.user_data['user_name'] = user_data['name']
+        context.user_data['user_name'] = user_data['user_name']
         context.user_data['jira_account'] = user_data.get('jira_name') or user_data.get('jira_email')
 
         return ConversationHandler.END

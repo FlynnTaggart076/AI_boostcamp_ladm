@@ -58,27 +58,32 @@ class JiraLoader:
         try:
             logger.info("Начало загрузки данных из Jira...")
 
-            # 1. Загружаем пользователей
+            # 1. Загружаем пользователей (без промежуточных сообщений)
+            logger.info("Загрузка пользователей...")
             if not self.load_users():
                 logger.error("Ошибка загрузки пользователей")
                 return False
 
             # 2. Загружаем проекты
+            logger.info("Загрузка проектов...")
             if not self.load_projects():
                 logger.error("Ошибка загрузки проектов")
                 return False
 
             # 3. Загружаем доски
+            logger.info("Загрузка досок...")
             if not self.load_boards():
                 logger.error("Ошибка загрузки досок")
                 return False
 
             # 4. Загружаем спринты
+            logger.info("Загрузка спринтов...")
             if not self.load_sprints():
                 logger.error("Ошибка загрузки спринтов")
                 return False
 
             # 5. Загружаем задачи
+            logger.info("Загрузка задач...")
             if not self.load_tasks():
                 logger.error("Ошибка загрузки задач")
                 return False
@@ -609,135 +614,56 @@ class JiraLoader:
 jira_loader = JiraLoader()
 
 
-def sync_jira_data_with_progress(update=None, context=None):
-    """Ручная синхронизация данных Jira с отправкой прогресса в Telegram"""
+def sync_jira_data_simple(update=None, context=None):
+    """Простая синхронная версия синхронизации"""
     try:
-        if update and context:
-            # Отправляем начальное сообщение
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Начинаю синхронизацию..."),
-                asyncio.get_event_loop()
-            )
-
-        logger.info("Ручная синхронизация данных Jira...")
+        logger.info("Запуск синхронной синхронизации Jira...")
 
         # 1. Очистка старых данных
         if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Очистка старых данных..."),
-                asyncio.get_event_loop()
-            )
+            # Используем run_coroutine_threadsafe для отправки сообщений
+            import asyncio
+            loop = asyncio.get_event_loop()
+            loop.create_task(update.message.reply_text("Очистка старых данных..."))
 
         jira_loader.clear_old_data()
 
         # 2. Загрузка пользователей
         if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Загрузка пользователей..."),
-                asyncio.get_event_loop()
-            )
+            loop.create_task(update.message.reply_text("Загрузка пользователей..."))
 
-        if not jira_loader.load_users():
-            logger.error("Ошибка загрузки пользователей")
-            if update and context:
-                asyncio.run_coroutine_threadsafe(
-                    update.message.reply_text("Ошибка загрузки пользователей"),
-                    asyncio.get_event_loop()
-                )
-            return False
+        jira_loader.load_users()
 
         # 3. Загрузка проектов
         if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Загрузка проектов..."),
-                asyncio.get_event_loop()
-            )
+            loop.create_task(update.message.reply_text("Загрузка проектов..."))
 
-        if not jira_loader.load_projects():
-            logger.error("Ошибка загрузки проектов")
-            if update and context:
-                asyncio.run_coroutine_threadsafe(
-                    update.message.reply_text("Ошибка загрузки проектов, продолжаем..."),
-                    asyncio.get_event_loop()
-                )
+        jira_loader.load_projects()
 
         # 4. Загрузка досок
         if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Загрузка досок..."),
-                asyncio.get_event_loop()
-            )
+            loop.create_task(update.message.reply_text("Загрузка досок..."))
 
-        if not jira_loader.load_boards():
-            logger.error("Ошибка загрузки досок")
-            if update and context:
-                asyncio.run_coroutine_threadsafe(
-                    update.message.reply_text("Ошибка загрузки досок, продолжаем..."),
-                    asyncio.get_event_loop()
-                )
+        jira_loader.load_boards()
 
         # 5. Загрузка спринтов
         if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Загрузка спринтов..."),
-                asyncio.get_event_loop()
-            )
+            loop.create_task(update.message.reply_text("Загрузка спринтов..."))
 
-        if not jira_loader.load_sprints():
-            logger.error("Ошибка загрузки спринтов")
-            if update and context:
-                asyncio.run_coroutine_threadsafe(
-                    update.message.reply_text("Ошибка загрузки спринтов, продолжаем..."),
-                    asyncio.get_event_loop()
-                )
+        jira_loader.load_sprints()
 
         # 6. Загрузка задач
         if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text("Загрузка задач..."),
-                asyncio.get_event_loop()
-            )
+            loop.create_task(update.message.reply_text("Загрузка задач..."))
 
-        if not jira_loader.load_tasks():
-            logger.error("Ошибка загрузки задач")
-            if update and context:
-                asyncio.run_coroutine_threadsafe(
-                    update.message.reply_text("Ошибка загрузки задач, продолжаем..."),
-                    asyncio.get_event_loop()
-                )
+        jira_loader.load_tasks()
 
-        logger.info("Ручная синхронизация завершена успешно")
-
-        if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text(
-                    "Синхронизация с Jira завершена успешно!\n"
-                    "Все данные обновлены:\n"
-                    "• Пользователи\n"
-                    "• Проекты\n"
-                    "• Доски\n"
-                    "• Спринты\n"
-                    "• Задачи"
-                ),
-                asyncio.get_event_loop()
-            )
-
+        logger.info("Синхронная синхронизация завершена")
         return True
 
     except Exception as e:
-        logger.error(f"Ошибка при ручной синхронизации: {e}")
-
-        if update and context:
-            asyncio.run_coroutine_threadsafe(
-                update.message.reply_text(
-                    f"Произошла ошибка при синхронизации:\n"
-                    f"{str(e)[:200]}..."
-                ),
-                asyncio.get_event_loop()
-            )
-
+        logger.error(f"Ошибка в синхронной синхронизации: {e}")
         return False
-
 
 # Функции для удобного использования
 def load_jira_data_on_startup(clear_old: bool = False) -> bool:

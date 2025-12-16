@@ -15,8 +15,6 @@ from tg_bot.config.constants import (
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.scheduler import SurveyScheduler
 
-from tg_bot.services.jira_loader import sync_jira_data_with_progress
-
 from tg_bot.config.texts import (
     HELP_TEXTS, PROFILE_TEXTS, JIRA_TEXTS, AUTH_TEXTS,
     get_role_display_name, format_profile, get_category_display
@@ -144,45 +142,38 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Уведомляем пользователя о начале синхронизации
-    await update.message.reply_text(
-        "🔄 *Запуск синхронизации данных Jira*\n\n"
-        "Этапы синхронизации:\n"
-        "1. 🧹 Очистка старых данных\n"
-        "2. 👥 Загрузка пользователей\n"
-        "3. 📁 Загрузка проектов\n"
-        "4. 📋 Загрузка досок\n"
-        "5. 🏃 Загрузка спринтов\n"
-        "6. 📝 Загрузка задач\n\n"
-        "⏳ *Это может занять несколько минут...*",
-        parse_mode='Markdown'
-    )
-
     try:
-        # Запускаем синхронизацию с передачей update и context для прогресса
-        import threading
-
-        # Запускаем в отдельном потоке, чтобы не блокировать бота
-        def sync_thread():
-            success = sync_jira_data_with_progress(update, context)
-            return success
-
-        # Создаем и запускаем поток
-        sync_thread_obj = threading.Thread(target=sync_thread)
-        sync_thread_obj.start()
-
-        # Сообщаем, что синхронизация запущена в фоне
-        await update.message.reply_text(
-            "🔧 *Синхронизация запущена в фоновом режиме*\n"
-            "Вы получите уведомление по завершении каждого этапа.",
+        # Отправляем одно начальное сообщение
+        message = await update.message.reply_text(
+            "🔄 *Запуск синхронизации данных Jira...*\n\n"
+            "⏳ *Это может занять несколько минут...*",
             parse_mode='Markdown'
         )
 
+        from tg_bot.services.jira_loader import jira_loader
+
+        jira_loader.clear_old_data()
+
+        success = jira_loader.load_all_data()
+
+        if success:
+            await message.edit_text(
+                "✅ *Синхронизация завершена успешно!*\n\n"
+                "Все данные Jira обновлены.",
+                parse_mode='Markdown'
+            )
+        else:
+            await message.edit_text(
+                "❌ *Синхронизация завершена с ошибками*\n\n"
+                "Проверьте логи для подробностей.",
+                parse_mode='Markdown'
+            )
+
     except Exception as e:
-        logger.error(f"Ошибка запуска синхронизации Jira: {e}")
+        logger.error(f"Ошибка синхронизации Jira: {e}")
         await update.message.reply_text(
-            "❌ *Не удалось запустить синхронизацию*\n"
-            "Проверьте подключение к Jira или обратитесь к администратору.",
+            f"❌ *Не удалось запустить синхронизацию*\n"
+            f"Ошибка: {str(e)[:200]}",
             parse_mode='Markdown'
         )
 
