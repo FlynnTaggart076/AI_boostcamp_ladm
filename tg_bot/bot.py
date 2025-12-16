@@ -16,8 +16,7 @@ from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.scheduler import SurveyScheduler
 
 from tg_bot.config.texts import (
-    HELP_TEXTS, PROFILE_TEXTS, JIRA_TEXTS, AUTH_TEXTS,
-    get_role_display_name, format_profile, get_category_display
+    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS
 )
 
 logging.basicConfig(
@@ -34,7 +33,7 @@ async def cancel_command(update, context):
         context.user_data.pop(key, None)
 
     await update.message.reply_text(
-        "Регистрация отменена. Используйте /start для повторной попытки."
+        GENERAL_TEXTS['cancelled']
     )
     return ConversationHandler.END
 
@@ -95,7 +94,7 @@ async def mysurveys_command(update, context):
 
     if role_category != 'CEO':
         await update.message.reply_text(
-            "Только руководители могут просматривать опросы."
+            GENERAL_TEXTS['survey_view_permission']
         )
         return
 
@@ -144,10 +143,9 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Отправляем начальное сообщение
     message = await update.message.reply_text(
-        "🔄 *Запуск синхронизации данных Jira...*\n\n"
-        "⏳ *Это может занять несколько минут.*\n"
-        "✅ *Вы можете продолжать использовать бота!*",
-        parse_mode='Markdown'
+        "Запуск синхронизации данных Jira...\n\n"
+        "Это может занять несколько минут.\n"
+        "Вы можете продолжать использовать бота!",
     )
 
     # Получаем текущий event loop
@@ -167,14 +165,12 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             async def send_result():
                 if success:
                     await message.edit_text(
-                        "✅ *Синхронизация завершена успешно!*\n\n"
-                        "Все данные Jira обновлены.",
-                        parse_mode='Markdown'
+                        "Синхронизация завершена успешно!\n\n"
+                        "Все данные Jira обновлены."
                     )
                 else:
                     await message.edit_text(
-                        "❌ *Синхронизация завершена с ошибками*",
-                        parse_mode='Markdown'
+                        "Синхронизация завершена с ошибками"
                     )
 
             # Отправляем задачу в основной event loop
@@ -186,8 +182,7 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Отправляем сообщение об ошибке
             async def send_error():
                 await message.edit_text(
-                    f"❌ *Ошибка синхронизации:*\n{str(e)[:200]}",
-                    parse_mode='Markdown'
+                    f"Ошибка синхронизации:\n{str(e)[:200]}"
                 )
 
             asyncio.run_coroutine_threadsafe(send_error(), loop)
@@ -237,7 +232,6 @@ def role_required(allowed_categories):
 
     return decorator
 
-
 def main():
     """Основная функция запуска бота"""
     application = Application.builder().token(config.BOT_TOKEN).build()
@@ -248,36 +242,36 @@ def main():
     from tg_bot.database.connection import db_connection
     test_connection = db_connection.get_connection()
     if test_connection:
-        logger.info("✅ Подключение к БД успешно")
+        logger.info("Подключение к БД успешно")
         test_connection.close()
     else:
-        logger.error("❌ Не удалось подключиться к БД")
+        logger.error("Не удалось подключиться к БД")
         return
 
     # НОВЫЙ БЛОК: Загрузка данных Jira при старте (если включено)
     if config.JIRA_URL and config.JIRA_SYNC_ON_START:
-        logger.info("🔄 Запуск загрузки данных Jira при старте...")
+        logger.info("Запуск загрузки данных Jira при старте...")
         try:
             # Запускаем синхронизацию синхронно (это блокирующая операция)
             from tg_bot.services.jira_loader import load_jira_data_on_startup
             success = load_jira_data_on_startup(clear_old=config.JIRA_CLEAR_OLD_DATA)
 
             if success:
-                logger.info("✅ Данные Jira успешно загружены при старте")
+                logger.info("Данные Jira успешно загружены при старте")
             else:
-                logger.warning("⚠️ Загрузка данных Jira завершилась с ошибками")
+                logger.warning("Загрузка данных Jira завершилась с ошибками")
                 logger.warning("Бот продолжит работу без полных данных Jira")
 
         except Exception as e:
-            logger.error(f"❌ Критическая ошибка при загрузке Jira: {e}")
+            logger.error(f"Критическая ошибка при загрузке Jira: {e}")
             logger.warning("Бот продолжит работу без данных Jira")
     else:
         if not config.JIRA_URL:
-            logger.info("⚠️ Jira URL не указан, пропускаем загрузку данных")
+            logger.info("Jira URL не указан, пропускаем загрузку данных")
         elif not config.JIRA_SYNC_ON_START:
-            logger.info("⚠️ JIRA_SYNC_ON_START=false, пропускаем загрузку данных")
+            logger.info("JIRA_SYNC_ON_START=false, пропускаем загрузку данных")
         else:
-            logger.info("⚠️ Загрузка данных Jira отключена")
+            logger.info("Загрузка данных Jira отключена")
 
     # Инициализируем планировщик и сохраняем в bot_data
     survey_scheduler = SurveyScheduler(application.bot)
@@ -348,7 +342,7 @@ def main():
     # Запускаем планировщик при старте бота
     async def startup():
         await survey_scheduler.start()
-        logger.info("✅ Планировщик опросов запущен")
+        logger.info("Планировщик опросов запущен")
 
     # Исправленная строка - используем asyncio.new_event_loop() вместо get_event_loop()
     loop = asyncio.new_event_loop()
@@ -356,7 +350,7 @@ def main():
     task = loop.create_task(startup())
 
     # Запускаем бота
-    logger.info("✅ Бот готов к работе")
+    logger.info("Бот готов к работе")
     application.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':

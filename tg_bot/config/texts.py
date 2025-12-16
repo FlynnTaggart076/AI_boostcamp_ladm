@@ -3,24 +3,24 @@ REGISTRATION_TEXTS = {
     'password_correct': "Пароль верный!\n\nТеперь введите ваше полное имя (ФИО):\nПример: Иванов Иван Иванович\n\nИспользуйте /cancel для отмены.",
     'password_wrong': "Неверный пароль. Попробуйте снова или используйте /cancel:",
     'name_saved': "Имя сохранено!\n\nТеперь введите ваш Jira аккаунт (имя или email):\nПример: ivan.ivanov@company.com\nИли: iivanov\n\nЕсли у вас нет Jira аккаунта, введите 'нет' или пропустите.",
-    'jira_saved': "Jira account saved!\n\nChoose your role:",
-    'role_options': """уководители (могут создавать опросы, просматривать отчеты и синхронизировать с Jira):
+    'jira_saved': "Jira аккаунт сохранен!\n\nВыберите вашу роль:",
+    'role_options': """Руководители (могут создавать опросы, просматривать отчеты и синхронизировать с Jira):
 • CEO - руководитель
 • team_lead - тимлид
 • project_manager - менеджер проектов
-• department_head - руководитель отдела\n\n
+• department_head - руководитель отдела
+
 Работники (могут отвечать на опросы):
 • worker - базовый работник
 • senior_worker - старший рабочий
-• specialist - специалист\n\n
-Enter role name (English only):""",
+• specialist - специалист
+
+Введите название роли (на английском):""",
     'invalid_role': "Некорректная роль. Введите одну из:\n• worker\n• CEO\n• team_lead\n• project_manager\n• department_head\n• senior_worker\n• specialist",
     'registration_complete': "Регистрация завершена успешно!\n\nИмя: {name}\nРоль: {role}\nTelegram: @{username}\n\nИспользуйте /help для списка команд.",
     'already_registered': "Вы уже авторизованы!\n\n{name}\nРоль: {role}\n{jira_info}\n\nИспользуйте /help для списка доступных команд.",
-
-    # НОВЫЕ ТЕКСТЫ
     'jira_user_found': "Найден пользователь Jira: {jira_name}\nТеперь выберите вашу роль в системе:",
-    'jira_user_not_found': "ℹПользователь с Jira аккаунтом '{jira_account}' не найден в системе.\nБудет создан новый профиль.",
+    'jira_user_not_found': "Пользователь с Jira аккаунтом '{jira_account}' не найден в системе.\nБудет создан новый профиль.",
     'jira_user_already_registered': "Пользователь с Jira аккаунтом '{jira_account}' уже зарегистрирован в Telegram.\nЕсли это вы, используйте /start с тем же Telegram аккаунтом.",
     'updating_existing_user': "Обновление данных существующего пользователя Jira...",
     'creating_new_user': "Создание нового профиля...",
@@ -29,7 +29,8 @@ Enter role name (English only):""",
 AUTH_TEXTS = {
     'not_authorized': "Сначала авторизуйтесь с помощью /start",
     'unknown_role': "Неизвестная роль. Обратитесь к администратору.",
-    'no_permission': "У вас нет прав для выполнения этой команды.\nВаша роль: {role}\nТребуемая категория: {required}"
+    'no_permission': "У вас нет прав для выполнения этой команды.\nВаша роль: {role}\nТребуемая категория: {required}",
+    'unknown_command': "Неизвестная команда. Используйте /help для списка команд."
 }
 
 SURVEY_TEXTS = {
@@ -42,8 +43,18 @@ SURVEY_TEXTS = {
     'past_time': "Время отправки не может быть в прошлом.\nПопробуйте снова:",
     'survey_created': "Опрос успешно создан!\n\nID опроса: {id}\nВопрос: {question}\nПолучатели: {role} ({count} чел.)\nОтправка: {time} ({type})\n\nОпрос будет отправлен автоматически в указанное время.",
     'survey_error': "Ошибка при создании опроса. Попробуйте снова позже.",
-    'no_active_surveys': "No active surveys available for response.",
-    'all_surveys_answered': "You have already answered all available surveys."
+    'no_active_surveys': "Нет активных опросов для ответа.",
+    'all_surveys_answered': "Вы уже ответили на все доступные опросы.",
+    'available_surveys_title': "Доступные опросы:\n\n",
+    'select_survey_prompt': "Введите номер опроса для ответа (например, '1'):\nИли используйте /cancel для отмены.",
+    'invalid_survey_number': "Пожалуйста, введите корректный номер. Попробуйте снова:",
+    'survey_out_of_range': "Некорректный выбор. Введите число от 1 до {count}:",
+    'survey_selected': "Опрос #{survey_id}\nДата: {survey_date}\nДля: {target}\n\nВопрос: {question}\n\nПожалуйста, введите ваш ответ:\n(Используйте /cancel для отмены)",
+    'answer_saved': "Ваш ответ сохранен!\nОпрос #{survey_id}\nВопрос: {question}\nДата опроса: {survey_date}",
+    'answer_error': "Ошибка сохранения ответа. Попробуйте позже.",
+    'response_cancelled': "Ответ на опрос отменен.",
+    'survey_cancelled': "Создание опроса отменено.",
+    'survey_sent': "Опрос #{survey_id} отправлен пользователям!"
 }
 
 HELP_TEXTS = {
@@ -122,13 +133,14 @@ CATEGORY_DISPLAY = {
     'CEO': 'Руководители'
 }
 
-# Другие тексты
+# Общие тексты
 GENERAL_TEXTS = {
-    'unknown_command': "Неизвестная команда. Используйте /help для списка команд.",
     'cancelled': "Регистрация отменена. Используйте /start для повторной попытки.",
-    'survey_cancelled': "Создание опроса отменено.",
     'db_connection_error': "Ошибка подключения к БД",
-    'jira_connection_error': "Ошибка подключения к Jira"
+    'jira_connection_error': "Ошибка подключения к Jira",
+    'no_active_surveys_for_user': "Нет активных опросов для вашей роли.",
+    'survey_creation_permission': "Только руководители (CEO, Team Lead, Project Manager и др.) могут создавать опросы.",
+    'survey_view_permission': "Только руководители могут просматривать опросы."
 }
 
 # Важные функции, которые нужно сохранить

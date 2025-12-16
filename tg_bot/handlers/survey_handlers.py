@@ -12,7 +12,7 @@ from tg_bot.config.constants import (
     AWAITING_SURVEY_SELECTION,
     AWAITING_SURVEY_RESPONSE
 )
-from tg_bot.config.texts import SURVEY_TEXTS
+from tg_bot.config.texts import SURVEY_TEXTS, GENERAL_TEXTS
 
 async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка вопроса для опроса"""
@@ -40,21 +40,20 @@ async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_T
         context.user_data.pop(key, None)
 
     await update.message.reply_text(
-        "Survey response cancelled."
+        SURVEY_TEXTS['response_cancelled']
     )
 
     return ConversationHandler.END
 
 
 async def sendsurvey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     # Проверяем, что пользователь из категории руководителей
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
     if role_category != 'CEO':
         await update.message.reply_text(
-            "Только руководители (CEO, Team Lead, Project Manager и др.) могут создавать опросы."
+            GENERAL_TEXTS['survey_creation_permission']
         )
         return ConversationHandler.END
 
@@ -73,7 +72,7 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
 
     if not context.user_data.get('current_survey_id'):
         await update.message.reply_text(
-            "Error: No active survey for response. Use /response to start."
+            "Ошибка: нет активного опроса для ответа. Используйте /response чтобы начать."
         )
         # Сбрасываем флаг
         context.user_data.pop('awaiting_survey_response', None)
@@ -83,13 +82,13 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
 
     if len(response_text) < 3:
         await update.message.reply_text(
-            "Answer must contain at least 3 characters. Try again:"
+            "Ответ должен содержать минимум 3 символа. Попробуйте снова:"
         )
         return AWAITING_SURVEY_RESPONSE
 
     # Получаем информацию об опросе
     survey_id = context.user_data['current_survey_id']
-    question = context.user_data.get('current_survey_question', 'No question')
+    question = context.user_data.get('current_survey_question', 'Без вопроса')
     survey_date = context.user_data.get('current_survey_datetime')
 
     # Сохраняем ответ в БД
@@ -106,19 +105,19 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
         date_str = ""
         if survey_date:
             if isinstance(survey_date, datetime):
-                date_str = f"\nSurvey date: {survey_date.strftime('%d.%m.%Y %H:%M')}"
+                date_str = f"\nДата опроса: {survey_date.strftime('%d.%m.%Y %H:%M')}"
             else:
-                date_str = f"\nSurvey date: {survey_date}"
+                date_str = f"\nДата опроса: {survey_date}"
 
         await update.message.reply_text(
-            f"Your answer has been saved!\n"
-            f"📋Survey #{survey_id}\n"
-            f"Question: {question[:100]}...{date_str}"
+            SURVEY_TEXTS['answer_saved'].format(
+                survey_id=survey_id,
+                question=question[:100],
+                survey_date=date_str
+            )
         )
     else:
-        await update.message.reply_text(
-            "Error saving answer. Please try again later."
-        )
+        await update.message.reply_text(SURVEY_TEXTS['answer_error'])
 
     # Очищаем данные
     for key in ['current_survey_id', 'current_survey_question',
@@ -135,21 +134,21 @@ async def handle_survey_role(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Определяем роль для БД
     if role_input == 'all':
         role_for_db = None  # В БД NULL означает "для всех"
-        role_display = 'all users'
+        role_display = 'все пользователи'
     elif role_input == 'ceo':
         role_for_db = 'CEO'  # Всегда заглавными в БД
-        role_display = 'CEOs (managers)'
+        role_display = 'руководители'
     else:
         # Для остальных ролей оставляем как есть (строчными)
         role_for_db = role_input
         # Формируем отображаемое имя
         role_display_map = {
-            'worker': 'workers',
-            'team_lead': 'team leads',
-            'project_manager': 'project managers',
-            'department_head': 'department heads',
-            'senior_worker': 'senior workers',
-            'specialist': 'specialists'
+            'worker': 'рабочие',
+            'team_lead': 'тимлиды',
+            'project_manager': 'менеджеры проектов',
+            'department_head': 'руководители отделов',
+            'senior_worker': 'старшие рабочие',
+            'specialist': 'специалисты'
         }
         role_display = role_display_map.get(role_input, role_input)
 
@@ -306,12 +305,8 @@ async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def send_survey_to_users(update: Update, context: ContextTypes.DEFAULT_TYPE, survey_id: int):
     """Отправка опроса пользователям"""
-    # Получаем опрос из БД
-    # Здесь должна быть логика получения пользователей по роли и отправки им сообщений
-    # Пока просто сообщим, что опрос создан
-
     await update.message.reply_text(
-        f"📨 Опрос #{survey_id} отправлен пользователям!"
+        SURVEY_TEXTS['survey_sent'].format(survey_id=survey_id)
     )
 
 
@@ -357,19 +352,18 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['awaiting_survey_selection'] = True
 
     # Формируем сообщение со списком опросов
-    message = "Available surveys:\n\n"
+    message = SURVEY_TEXTS['available_surveys_title']
     for i, survey in enumerate(unanswered_surveys, 1):
         # Определяем, для кого опрос
-        target = survey['role'] if survey['role'] else "all users"
+        target = survey['role'] if survey['role'] else "все пользователи"
         message += (
-            f"{i}. Survey #{survey['id_survey']}\n"
-            f"   Date: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-            f"   Question: {survey['question'][:100]}...\n"
-            f"   For: {target}\n\n"
+            f"{i}. Опрос #{survey['id_survey']}\n"
+            f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+            f"   Вопрос: {survey['question'][:100]}...\n"
+            f"   Для: {target}\n\n"
         )
 
-    message += "Enter the survey number to respond (e.g., '1'):\n"
-    message += "Or use /cancel to cancel."
+    message += SURVEY_TEXTS['select_survey_prompt']
 
     await update.message.reply_text(message)
 
@@ -384,7 +378,7 @@ async def handle_survey_selection(update: Update, context: ContextTypes.DEFAULT_
         selection_num = int(selection_text)
     except ValueError:
         await update.message.reply_text(
-            "Please enter a valid number. Try again:"
+            SURVEY_TEXTS['invalid_survey_number']
         )
         return AWAITING_SURVEY_SELECTION
 
@@ -392,7 +386,7 @@ async def handle_survey_selection(update: Update, context: ContextTypes.DEFAULT_
 
     if not 1 <= selection_num <= len(available_surveys):
         await update.message.reply_text(
-            f"Invalid selection. Please enter a number from 1 to {len(available_surveys)}:"
+            SURVEY_TEXTS['survey_out_of_range'].format(count=len(available_surveys))
         )
         return AWAITING_SURVEY_SELECTION
 
@@ -408,15 +402,15 @@ async def handle_survey_selection(update: Update, context: ContextTypes.DEFAULT_
     context.user_data.pop('awaiting_survey_selection', None)
 
     # Определяем, для кого опрос
-    target = selected_survey['role'] if selected_survey['role'] else "all users"
+    target = selected_survey['role'] if selected_survey['role'] else "все пользователи"
 
     await update.message.reply_text(
-        f"Survey #{selected_survey['id_survey']}\n"
-        f"Date: {selected_survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-        f"For: {target}\n\n"
-        f"Question: {selected_survey['question']}\n\n"
-        "Please enter your answer:\n"
-        "(Use /cancel to cancel)"
+        SURVEY_TEXTS['survey_selected'].format(
+            survey_id=selected_survey['id_survey'],
+            survey_date=selected_survey['datetime'].strftime('%d.%m.%Y %H:%M'),
+            target=target,
+            question=selected_survey['question']
+        )
     )
 
     return AWAITING_SURVEY_RESPONSE
@@ -431,9 +425,7 @@ async def cancel_survey(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'awaiting_survey_response']:
         context.user_data.pop(key, None)
 
-    await update.message.reply_text(
-        "Создание опроса отменено."
-    )
+    await update.message.reply_text(SURVEY_TEXTS['survey_cancelled'])
 
     return ConversationHandler.END
 

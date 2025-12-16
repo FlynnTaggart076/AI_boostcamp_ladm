@@ -21,7 +21,7 @@ class SurveyScheduler:
 
     async def start(self):
         """Запуск планировщика"""
-        logger.info("🕐 Запуск планировщика опросов...")
+        logger.info("Запуск планировщика опросов...")
 
         # Загружаем активные опросы из БД и планируем их
         await self.schedule_existing_surveys()
@@ -151,10 +151,10 @@ class SurveyScheduler:
         role_display = get_role_display_name(user['role'])
 
         # Определяем, для кого опрос
-        target = survey['role'] if survey['role'] else "all users"
+        target = survey['role'] if survey['role'] else "все пользователи"
 
         # Используем user_name вместо name
-        user_name = user.get('user_name', 'Unknown User')
+        user_name = user.get('user_name', 'Неизвестный пользователь')
 
         message = (
             f"Новый опрос от руководителя!\n\n"
@@ -174,9 +174,10 @@ class SurveyScheduler:
                 chat_id=tg_id,
                 text=message
             )
-            logger.info(f"✅ Survey #{survey['id_survey']} sent to user {user_name} (tg_id: {tg_id})")
+            logger.info(f"Survey #{survey['id_survey']} sent to user {user_name} (tg_id: {tg_id})")
         except Exception as e:
-            logger.error(f"❌ Error sending to user {user_name} (tg_id: {tg_id}): {e}")
+            logger.error(f"Error sending to user {user_name} (tg_id: {tg_id}): {e}")
+
 
     async def periodic_check(self):
         """Периодическая проверка новых опросов"""
