@@ -15,6 +15,7 @@ AWAITING_SURVEY_TIME = 12
 # Состояния для ответа на опрос
 AWAITING_SURVEY_SELECTION = 20
 AWAITING_SURVEY_RESPONSE = 21
+AWAITING_SURVEY_RESPONSE_PART = 22
 
 # Роли пользователей (для проверок)
 ROLES = {

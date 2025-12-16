@@ -58,6 +58,15 @@ SURVEY_TEXTS = {
     'surveys_list_title': "Активные опросы:\n\n",
     'survey_item_format': "ID: {id}\nВопрос: {question}\nДля: {role}\nВремя: {time}\nСтатус: {status}\n\n",
     'no_active_surveys_found': "Нет активных опросов.",
+
+    'response_cancelled_with_parts': (
+        "Ответ отменен. Удалено {parts_count} частей ответа."
+    ),
+
+    'no_response_parts': (
+        "Вы не отправили ни одной части ответа.\n"
+        "Ответ не сохранен."
+    ),
 }
 
 HELP_TEXTS = {

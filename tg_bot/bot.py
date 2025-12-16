@@ -18,6 +18,7 @@ from tg_bot.handlers.scheduler import SurveyScheduler
 from tg_bot.config.texts import (
     HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS, SURVEY_TEXTS
 )
+from tg_bot.handlers.survey_handlers import finish_response_command
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -361,6 +362,7 @@ def main():
     application.add_handler(CommandHandler("weeklydigest", weeklydigest_wrapper))
     application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
+    application.add_handler(CommandHandler("done", finish_response_command))
 
     # Общий обработчик текстовых сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
