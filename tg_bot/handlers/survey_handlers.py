@@ -1,3 +1,5 @@
+import asyncio
+
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
 
@@ -351,21 +353,41 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['available_surveys'] = unanswered_surveys
     context.user_data['awaiting_survey_selection'] = True
 
-    # Формируем сообщение со списком опросов
-    message = SURVEY_TEXTS['available_surveys_title']
+    # Разбиваем список на части, если он слишком длинный
+    chunks = []
+    current_chunk = SURVEY_TEXTS['available_surveys_title']
+
     for i, survey in enumerate(unanswered_surveys, 1):
         # Определяем, для кого опрос
         target = survey['role'] if survey['role'] else "все пользователи"
-        message += (
+        survey_text = (
             f"{i}. Опрос #{survey['id_survey']}\n"
             f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-            f"   Вопрос: {survey['question'][:100]}...\n"
+            f"   Вопрос: {survey['question'][:80]}...\n"
             f"   Для: {target}\n\n"
         )
 
-    message += SURVEY_TEXTS['select_survey_prompt']
+        # Если добавление нового элемента превысит лимит, начинаем новый чанк
+        if len(current_chunk) + len(survey_text) > 4000:
+            chunks.append(current_chunk)
+            current_chunk = f"Доступные опросы (продолжение):\n\n{survey_text}"
+        else:
+            current_chunk += survey_text
 
-    await update.message.reply_text(message)
+    # Добавляем последний чанк с инструкцией
+    if current_chunk:
+        chunks.append(current_chunk + SURVEY_TEXTS['select_survey_prompt'])
+
+    # Отправляем первый чанк
+    if chunks:
+        await update.message.reply_text(chunks[0])
+
+        # Остальные чанки отправляем с задержкой
+        for chunk in chunks[1:]:
+            await asyncio.sleep(0.5)
+            await update.message.reply_text(chunk)
+    else:
+        await update.message.reply_text(SURVEY_TEXTS['no_active_surveys'])
 
     return AWAITING_SURVEY_SELECTION
 

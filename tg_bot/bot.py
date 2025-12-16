@@ -16,7 +16,7 @@ from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.scheduler import SurveyScheduler
 
 from tg_bot.config.texts import (
-    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS
+    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS, SURVEY_TEXTS
 )
 
 logging.basicConfig(
@@ -107,19 +107,46 @@ async def mysurveys_command(update, context):
         )
         return
 
-    response = "Активные опросы:\n\n"
+    # Разбиваем список опросов на части по 4000 символов
+    chunks = []
+    current_chunk = SURVEY_TEXTS['surveys_list_title']
+    chunk_count = 0
+
     for survey in surveys:
         role_display = survey['role'] if survey['role'] else 'все'
-        response += (
-            f"ID: {survey['id_survey']}\n"
-            f"Вопрос: {survey['question'][:50]}...\n"
-            f"Для: {role_display}\n"
-            f"Время: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-            f"Статус: {survey['state']}\n\n"
+        survey_item = SURVEY_TEXTS['survey_item_format'].format(
+            id=survey['id_survey'],
+            question=survey['question'][:50] + ('...' if len(survey['question']) > 50 else ''),
+            role=role_display,
+            time=survey['datetime'].strftime('%d.%m.%Y %H:%M'),
+            status=survey['state']
         )
 
-    await update.message.reply_text(response)
+        # Если добавление нового элемента превысит лимит, начинаем новый чанк
+        if len(current_chunk) + len(survey_item) > 4000:
+            chunks.append(current_chunk)
+            chunk_count += 1
+            current_chunk = f"Активные опросы (часть {chunk_count + 1}):\n\n{survey_item}"
+        else:
+            current_chunk += survey_item
 
+    # Добавляем последний чанк
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    # Отправляем первый чанк сразу
+    if chunks:
+        await update.message.reply_text(chunks[0])
+
+        # Остальные чанки отправляем с задержкой
+        for chunk in chunks[1:]:
+            await asyncio.sleep(0.5)  # Небольшая задержка между сообщениями
+            await update.message.reply_text(chunk)
+
+        # Добавляем итоговую информацию
+        await update.message.reply_text(f"Всего активных опросов: {len(surveys)}")
+    else:
+        await update.message.reply_text(SURVEY_TEXTS['no_active_surveys_found'])
 
 async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Синхронизация данных Jira - работает в фоне"""

@@ -54,7 +54,10 @@ SURVEY_TEXTS = {
     'answer_error': "Ошибка сохранения ответа. Попробуйте позже.",
     'response_cancelled': "Ответ на опрос отменен.",
     'survey_cancelled': "Создание опроса отменено.",
-    'survey_sent': "Опрос #{survey_id} отправлен пользователям!"
+    'survey_sent': "Опрос #{survey_id} отправлен пользователям!",
+    'surveys_list_title': "Активные опросы:\n\n",
+    'survey_item_format': "ID: {id}\nВопрос: {question}\nДля: {role}\nВремя: {time}\nСтатус: {status}\n\n",
+    'no_active_surveys_found': "Нет активных опросов.",
 }
 
 HELP_TEXTS = {
