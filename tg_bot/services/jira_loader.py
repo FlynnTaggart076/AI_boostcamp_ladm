@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import logging
 import requests
 
@@ -13,19 +12,12 @@ logger = logging.getLogger(__name__)
 class JiraLoader:
     def __init__(self):
         self.base_url = config.JIRA_URL
-        # Логируем информацию о токене
-        if config.JIRA_API_TOKEN:
-            logger.info(f"Jira токен получен, длина: {len(config.JIRA_API_TOKEN)}")
-            logger.info(f"Первые 10 символов токена: {config.JIRA_API_TOKEN[:10]}...")
-            logger.info(f"Последние 10 символов токена: ...{config.JIRA_API_TOKEN[-10:]}")
-
         self.auth = (config.JIRA_EMAIL, config.JIRA_API_TOKEN)
         self.headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
 
-        # Тестовый запрос для проверки подключения
         self.test_connection()
 
     def test_connection(self):

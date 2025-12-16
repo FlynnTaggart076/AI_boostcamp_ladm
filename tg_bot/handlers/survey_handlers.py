@@ -15,22 +15,40 @@ from tg_bot.config.constants import (
     AWAITING_SURVEY_RESPONSE, AWAITING_SURVEY_RESPONSE_PART
 )
 from tg_bot.config.texts import SURVEY_TEXTS, GENERAL_TEXTS
+from tg_bot.services.validators import Validator
 
 async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка вопроса для опроса"""
     question = update.message.text.strip()
 
-    if len(question) < 5:
-        await update.message.reply_text(
-            "Вопрос должен содержать минимум 5 символов. Попробуйте снова:"
-        )
+    # Используем централизованный валидатор
+    is_valid, error_msg = Validator.validate_survey_question(question)
+
+    if not is_valid:
+        await update.message.reply_text(f"❌ {error_msg}. Попробуйте снова:")
         return AWAITING_SURVEY_QUESTION
 
     context.user_data['survey_question'] = question
-
     await update.message.reply_text(SURVEY_TEXTS['question_saved'])
-
     return AWAITING_SURVEY_ROLE
+
+
+async def handle_survey_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка времени отправки"""
+    time_input = update.message.text.strip().lower()
+
+    # Используем централизованный валидатор
+    is_valid, error_msg, send_time = Validator.validate_survey_time(time_input)
+
+    if not is_valid:
+        await update.message.reply_text(f"❌ {error_msg}\n\n" + SURVEY_TEXTS['invalid_time'])
+        return AWAITING_SURVEY_TIME
+
+    context.user_data['survey_datetime'] = send_time
+    context.user_data['schedule_type'] = "немедленно" if time_input == 'сейчас' else "по расписанию"
+
+    # Создаем опрос в БД
+    return await create_survey_in_db(update, context)
 
 
 async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -137,7 +155,6 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
             )
     else:
         await update.message.reply_text(SURVEY_TEXTS['answer_error'])
-
 
     # Очищаем данные
     for key in ['current_survey_id', 'current_survey_question',

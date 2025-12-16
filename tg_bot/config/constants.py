@@ -1,5 +1,6 @@
-# Пароль для регистрации (вынести в .env в будущем)
-REGISTRATION_PASSWORD = "secret123"
+from tg_bot.config.settings import config
+
+REGISTRATION_PASSWORD = config.REGISTRATION_PASSWORD
 
 # Состояния для регистрации пользователя
 AWAITING_PASSWORD = 0

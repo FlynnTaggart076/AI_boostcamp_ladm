@@ -33,25 +33,6 @@ class UserModel:
             connection.close()
 
     @staticmethod
-    def get_user_by_tg_id(tg_id):
-        """Получение пользователя по tg_id - ИСПОЛЬЗУЕТСЯ"""
-        query = 'SELECT * FROM users WHERE tg_id = %s;'
-        connection = db_connection.get_connection()
-        if not connection:
-            return None
-        try:
-            cursor = connection.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query, (tg_id,))
-            user = cursor.fetchone()
-            return dict(user) if user else None
-        except Exception as e:
-            logger.error(f"Ошибка получения пользователя по tg_id: {e}")
-            return None
-        finally:
-            cursor.close()
-            connection.close()
-
-    @staticmethod
     def get_user_by_jira_name(jira_name):
         """Получение пользователя по jira_name - ИСПОЛЬЗУЕТСЯ при регистрации"""
         query = 'SELECT * FROM users WHERE jira_name = %s;'
@@ -201,36 +182,6 @@ class UserModel:
             connection.close()
 
     @staticmethod
-    def get_users_by_role_category(role_category):
-        """Получение пользователей по категории ролей - ИСПОЛЬЗУЕТСЯ для отправки опросов"""
-        if role_category not in ROLE_CATEGORIES:
-            return []
-        role_types = list(ROLE_CATEGORIES[role_category]['subtypes'].keys())
-        if not role_types:
-            return []
-        placeholders = ', '.join(['%s'] * len(role_types))
-        query = f'''
-        SELECT * FROM users 
-        WHERE role IN ({placeholders}) 
-        AND tg_id IS NOT NULL 
-        AND tg_username IS NOT NULL;
-        '''
-        connection = db_connection.get_connection()
-        if not connection:
-            return []
-        try:
-            cursor = connection.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query, tuple(role_types))
-            users = cursor.fetchall()
-            return [dict(user) for user in users]
-        except Exception as e:
-            logger.error(f"Ошибка получения пользователей по категории {role_category}: {e}")
-            return []
-        finally:
-            cursor.close()
-            connection.close()
-
-    @staticmethod
     def get_all_users_with_tg_id():
         """Получение всех пользователей с tg_id - ИСПОЛЬЗУЕТСЯ для опросов 'всем'"""
         query = '''
@@ -248,28 +199,6 @@ class UserModel:
             return [dict(user) for user in users]
         except Exception as e:
             logger.error(f"Ошибка получения всех пользователей: {e}")
-            return []
-        finally:
-            cursor.close()
-            connection.close()
-
-    @staticmethod
-    def get_all_jira_users():
-        """Получение всех пользователей из Jira (даже без Telegram) - ИСПОЛЬЗУЕТСЯ при загрузке"""
-        query = '''
-        SELECT * FROM users 
-        WHERE jira_name IS NOT NULL OR jira_email IS NOT NULL;
-        '''
-        connection = db_connection.get_connection()
-        if not connection:
-            return []
-        try:
-            cursor = connection.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query)
-            users = cursor.fetchall()
-            return [dict(user) for user in users]
-        except Exception as e:
-            logger.error(f"Ошибка получения всех пользователей Jira: {e}")
             return []
         finally:
             cursor.close()
