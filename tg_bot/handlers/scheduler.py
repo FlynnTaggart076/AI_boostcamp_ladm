@@ -42,9 +42,10 @@ class SurveyScheduler:
                 await self.schedule_survey(survey_id, survey_time)
                 logger.info(f"Опрос #{survey_id} запланирован на {survey_time}")
             else:
-                # Если время уже прошло, отправляем немедленно
-                await self.send_survey_now(survey_id)
-                logger.info(f"Опрос #{survey_id} отправлен немедленно (время прошло)")
+                if survey_id not in self.sent_surveys_cache:
+                    await self.send_survey_now(survey_id)
+                    self.sent_surveys_cache.add(survey_id)
+                    logger.info(f"Опрос #{survey_id} отправлен немедленно (время прошло)")
 
     async def schedule_survey(self, survey_id: int, send_time: datetime):
         """Планирование отправки опроса"""
@@ -210,8 +211,14 @@ class SurveyScheduler:
 
     async def add_new_survey(self, survey_id: int, send_time: datetime):
         """Добавление нового опроса в планировщик"""
-        await self.schedule_survey(survey_id, send_time)
+        now = datetime.now()
 
+        # Если время уже прошло, отправляем немедленно
+        if send_time <= now:
+            await self.send_survey_now(survey_id)
+        else:
+            # Иначе планируем на будущее
+            await self.schedule_survey(survey_id, send_time)
     async def stop(self):
         """Остановка планировщика"""
         # Отменяем все задачи

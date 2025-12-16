@@ -288,16 +288,14 @@ async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE
             )
         )
 
-        # Добавляем опрос в планировщик через bot_data
+        # Добавляем опрос в планировщик
         if hasattr(context, 'bot_data') and 'survey_scheduler' in context.bot_data:
             survey_scheduler = context.bot_data['survey_scheduler']
-            await survey_scheduler.add_new_survey(survey_id, context.user_data['survey_datetime'])
 
-            # Если отправка "немедленно", отправляем опрос сейчас
-            if context.user_data['schedule_type'] == "немедленно":
-                await survey_scheduler.send_survey_now(survey_id)
+            # Всегда добавляем в планировщик, он сам решит когда отправлять
+            await survey_scheduler.add_new_survey(survey_id, context.user_data['survey_datetime'])
         else:
-            # Fallback: если планировщик не доступен, логируем
+            # Fallback
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Survey scheduler not available in bot_data for survey {survey_id}")
