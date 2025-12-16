@@ -12,6 +12,7 @@ from tg_bot.config.constants import (
     AWAITING_JIRA,
     AWAITING_ROLE
 )
+from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.scheduler import SurveyScheduler
 
@@ -86,7 +87,7 @@ async def profile_command(update, context):
     )
 
 
-async def mysurveys_command(update, context):
+async def allsurveys_command(update, context):
     """Показать созданные опросы"""
     from tg_bot.config.roles_config import get_role_category
 
@@ -334,11 +335,12 @@ def main():
     application.add_handler(registration_handler)
     application.add_handler(survey_creation_conversation)
     application.add_handler(survey_response_conversation)
+    application.add_handler(addresponse_conversation)
 
     # Команды
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("profile", profile_command))
-    application.add_handler(CommandHandler("mysurveys", mysurveys_command))
+    application.add_handler(CommandHandler("allsurveys", allsurveys_command))
     application.add_handler(CommandHandler("syncjira", syncjira_command))
 
     @role_required(['CEO'])
