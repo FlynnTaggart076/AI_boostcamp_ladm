@@ -275,7 +275,6 @@ def main():
         logger.error("Не удалось подключиться к БД")
         return
 
-    # НОВЫЙ БЛОК: Загрузка данных Jira при старте (если включено)
     if config.JIRA_URL and config.JIRA_SYNC_ON_START:
         logger.info("Запуск загрузки данных Jira при старте...")
         try:

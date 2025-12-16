@@ -107,19 +107,28 @@ async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_T
         date_str = ""
         if survey_date:
             if isinstance(survey_date, datetime):
-                date_str = f"\nДата опроса: {survey_date.strftime('%d.%m.%Y %H:%M')}"
+                date_str = f"{survey_date.strftime('%d.%m.%Y %H:%M')}"
+            elif isinstance(survey_date, str):
+                date_str = survey_date
             else:
-                date_str = f"\nДата опроса: {survey_date}"
+                date_str = str(survey_date)
 
-        await update.message.reply_text(
-            SURVEY_TEXTS['answer_saved'].format(
-                survey_id=survey_id,
-                question=question[:100],
-                survey_date=date_str
+        if date_str:
+            await update.message.reply_text(
+                f"Ваш ответ сохранен!\n\n"
+                f"Опрос #{survey_id}\n"
+                f"Вопрос: {question[:100]}...\n"
+                f"Дата опроса: {date_str}"
             )
-        )
+        else:
+            await update.message.reply_text(
+                f"Ваш ответ сохранен!\n\n"
+                f"Опрос #{survey_id}\n"
+                f"Вопрос: {question[:100]}..."
+            )
     else:
         await update.message.reply_text(SURVEY_TEXTS['answer_error'])
+
 
     # Очищаем данные
     for key in ['current_survey_id', 'current_survey_question',

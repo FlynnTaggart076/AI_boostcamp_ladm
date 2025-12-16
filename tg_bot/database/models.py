@@ -489,25 +489,48 @@ class ResponseModel:
     @staticmethod
     def save_response(response_data):
         """Сохранение ответа на опрос - ИСПОЛЬЗУЕТСЯ"""
-        query = '''
-        INSERT INTO responses 
-        (id_user, id_survey, answer)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (id_user, id_survey) 
-        DO UPDATE SET
-            answer = EXCLUDED.answer
-        RETURNING id_response;
-        '''
-        connection = db_connection.get_connection()
-        if not connection:
-            return None
-        try:
-            cursor = connection.cursor()
-            cursor.execute(query, (
+        # Сначала проверяем существующий ответ
+        existing_response = ResponseModel.get_user_response(
+            response_data['id_survey'],
+            response_data['id_user']
+        )
+
+        if existing_response:
+            # Обновляем существующий ответ
+            query = '''
+            UPDATE responses 
+            SET answer = %s
+            WHERE id_user = %s AND id_survey = %s
+            RETURNING id_response;
+            '''
+
+            params = (
+                response_data['answer'],
+                response_data['id_user'],
+                response_data['id_survey']
+            )
+        else:
+            # Создаем новый ответ
+            query = '''
+            INSERT INTO responses 
+            (id_user, id_survey, answer)
+            VALUES (%s, %s, %s)
+            RETURNING id_response;
+            '''
+
+            params = (
                 response_data['id_user'],
                 response_data['id_survey'],
                 response_data['answer']
-            ))
+            )
+
+        connection = db_connection.get_connection()
+        if not connection:
+            return None
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute(query, params)
             response_id = cursor.fetchone()[0]
             connection.commit()
             return response_id
