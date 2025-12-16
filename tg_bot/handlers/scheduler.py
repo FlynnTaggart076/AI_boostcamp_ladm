@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import traceback
 from datetime import datetime
 from typing import Dict, List
 from telegram import Bot
@@ -110,13 +111,16 @@ class SurveyScheduler:
                     await self.send_survey_to_user(user, survey)
                     sent_count += 1
                 except Exception as e:
+                    user_name = user.get('user_name', 'Unknown')
                     logger.error(
-                        f"Ошибка отправки пользователю {user['name']} (chat_id: {user['tg_id']}): {e}")
+                        f"Ошибка отправки пользователю {user_name} (chat_id: {user['tg_id']}): {e}"
+                    )
 
             logger.info(f"Опрос #{survey_id} отправлен {sent_count} пользователям")
 
         except Exception as e:
             logger.error(f"Ошибка при отправке опроса #{survey_id}: {e}")
+            logger.error(f"Трассировка ошибки: {traceback.format_exc()}")
 
     async def get_target_users(self, survey) -> List[Dict]:
         """Получение целевых пользователей для опроса"""
@@ -140,7 +144,7 @@ class SurveyScheduler:
         tg_id = user['tg_id']
 
         if not tg_id:
-            logger.warning(f"User {user['name']} has no tg_id")
+            logger.warning(f"User {user.get('user_name', 'Unknown')} has no tg_id")
             return
 
         # Формируем сообщение
@@ -148,6 +152,9 @@ class SurveyScheduler:
 
         # Определяем, для кого опрос
         target = survey['role'] if survey['role'] else "all users"
+
+        # Используем user_name вместо name
+        user_name = user.get('user_name', 'Unknown User')
 
         message = (
             f"Новый опрос от руководителя!\n\n"
@@ -167,10 +174,9 @@ class SurveyScheduler:
                 chat_id=tg_id,
                 text=message
             )
-            logger.info(f"✅ Survey #{survey['id_survey']} sent to user {user['name']} (tg_id: {tg_id})")
+            logger.info(f"✅ Survey #{survey['id_survey']} sent to user {user_name} (tg_id: {tg_id})")
         except Exception as e:
-            logger.error(f"❌ Error sending to user {user['name']} (tg_id: {tg_id}): {e}")
-
+            logger.error(f"❌ Error sending to user {user_name} (tg_id: {tg_id}): {e}")
 
     async def periodic_check(self):
         """Периодическая проверка новых опросов"""
