@@ -111,17 +111,29 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text("Сначала авторизуйтесь с помощью /start")
         return
 
-    # Маппинг callback_data на команды
+    # Обработка простых команд, которые только показывают сообщение
+    simple_commands = {
+        'menu_response': ('ответа на опрос', 'response'),
+        'menu_addresponse': ('дополнения старого ответа', 'addresponse'),
+        'survey_create': ('создания опроса', 'sendsurvey')
+    }
+
+    if callback_data in simple_commands:
+        action_name, command = simple_commands[callback_data]
+        await query.edit_message_text(
+            f"Для {action_name} нажмите команду /{command}",
+            parse_mode='Markdown'
+        )
+        return
+
+    # Маппинг callback_data на команды для остальных кнопок
     command_map = {
         'menu_profile': ('profile', []),
         'menu_help': ('help', []),
         'menu_sync': ('syncjira', []),
-        'menu_response': ('response', []),
-        'menu_addresponse': ('addresponse', []),
         'report_daily': ('dailydigest', []),
         'report_weekly': ('weeklydigest', []),
         'report_blockers': ('blockers', []),
-        'survey_create': ('sendsurvey', []),
         'survey_list': ('allsurveys', []),
     }
 
