@@ -219,11 +219,3 @@ class SurveyScheduler:
         else:
             # Иначе планируем на будущее
             await self.schedule_survey(survey_id, send_time)
-    async def stop(self):
-        """Остановка планировщика"""
-        # Отменяем все задачи
-        for task in self.scheduled_tasks.values():
-            task.cancel()
-
-        self.scheduled_tasks.clear()
-        logger.info("🛑 Планировщик опросов остановлен")

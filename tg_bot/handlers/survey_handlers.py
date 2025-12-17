@@ -33,24 +33,6 @@ async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_T
     return AWAITING_SURVEY_ROLE
 
 
-async def handle_survey_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка времени отправки"""
-    time_input = update.message.text.strip().lower()
-
-    # Используем централизованный валидатор
-    is_valid, error_msg, send_time = Validator.validate_survey_time(time_input)
-
-    if not is_valid:
-        await update.message.reply_text(f"❌ {error_msg}\n\n" + SURVEY_TEXTS['invalid_time'])
-        return AWAITING_SURVEY_TIME
-
-    context.user_data['survey_datetime'] = send_time
-    context.user_data['schedule_type'] = "немедленно" if time_input == 'сейчас' else "по расписанию"
-
-    # Создаем опрос в БД
-    return await create_survey_in_db(update, context)
-
-
 async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отмена ответа на опрос"""
     # Проверяем, есть ли части ответа
@@ -346,14 +328,6 @@ async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE
         context.user_data.pop(key, None)
 
     return ConversationHandler.END
-
-
-async def send_survey_to_users(update: Update, context: ContextTypes.DEFAULT_TYPE, survey_id: int):
-    """Отправка опроса пользователям"""
-    await update.message.reply_text(
-        SURVEY_TEXTS['survey_sent'].format(survey_id=survey_id)
-    )
-
 
 async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда для ответа на опрос (доступна всем)"""
