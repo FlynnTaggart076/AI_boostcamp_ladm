@@ -25,6 +25,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     role_category = get_role_category(user_role)
 
+
     if role_category == 'CEO':
         # Кнопки для руководителей (дополнительно к общим)
         keyboard = [
