@@ -76,17 +76,27 @@ async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def sendsurvey_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Начать создание опроса"""
     # Проверяем, что пользователь из категории руководителей
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
     if role_category != 'CEO':
-        await update.message.reply_text(
-            GENERAL_TEXTS['survey_creation_permission']
-        )
+        response_text = GENERAL_TEXTS['survey_creation_permission']
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return ConversationHandler.END
 
-    await update.message.reply_text(SURVEY_TEXTS['create_welcome'])
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        response_text = SURVEY_TEXTS['create_welcome']
+        await update.callback_query.edit_message_text(response_text)
+        # Нужно сохранить message_id для продолжения диалога
+        context.user_data['menu_survey_message_id'] = update.callback_query.message.message_id
+    else:
+        await update.message.reply_text(SURVEY_TEXTS['create_welcome'])
 
     context.user_data['creating_survey'] = True
     return AWAITING_SURVEY_QUESTION
@@ -352,23 +362,24 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Опросы доступны всем авторизованным пользователям
     if not user_role:
-        await update.message.reply_text(
-            "Сначала авторизуйтесь с помощью /start"
-        )
+        response_text = "Сначала авторизуйтесь с помощью /start"
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return ConversationHandler.END
 
     # Получаем активные опросы для этой роли или для всех
-    # 1. Опросы для конкретной роли пользователя
     active_surveys_for_role = SurveyModel.get_surveys_for_role(user_role)
-
-    # 2. Опросы для всех (role = NULL)
     active_surveys_for_all = SurveyModel.get_surveys_for_role(None)
-
-    # Объединяем опросы
     all_active_surveys = active_surveys_for_role + active_surveys_for_all
 
     if not all_active_surveys:
-        await update.message.reply_text(SURVEY_TEXTS['no_active_surveys'])
+        response_text = SURVEY_TEXTS['no_active_surveys']
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return
 
     # Фильтруем опросы, на которые пользователь еще не отвечал
@@ -379,47 +390,68 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             unanswered_surveys.append(survey)
 
     if not unanswered_surveys:
-        await update.message.reply_text(SURVEY_TEXTS['all_surveys_answered'])
+        response_text = SURVEY_TEXTS['all_surveys_answered']
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return
 
     context.user_data['available_surveys'] = unanswered_surveys
     context.user_data['awaiting_survey_selection'] = True
 
-    # Разбиваем список на части, если он слишком длинный
-    chunks = []
-    current_chunk = SURVEY_TEXTS['available_surveys_title']
+    # Формируем текст для отображения
+    if hasattr(update, 'callback_query') and update.callback_query:
+        # Для меню - показываем краткий список
+        response_text = SURVEY_TEXTS['available_surveys_title']
+        for i, survey in enumerate(unanswered_surveys[:5], 1):  # Ограничиваем 5 опросами для меню
+            target = survey['role'] if survey['role'] else "все пользователи"
+            response_text += (
+                f"{i}. Опрос #{survey['id_survey']}\n"
+                f"   Вопрос: {survey['question'][:50]}...\n\n"
+            )
 
-    for i, survey in enumerate(unanswered_surveys, 1):
-        # Определяем, для кого опрос
-        target = survey['role'] if survey['role'] else "все пользователи"
-        survey_text = (
-            f"{i}. Опрос #{survey['id_survey']}\n"
-            f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-            f"   Вопрос: {survey['question'][:80]}...\n"
-            f"   Для: {target}\n\n"
-        )
+        if len(unanswered_surveys) > 5:
+            response_text += f"... и еще {len(unanswered_surveys) - 5} опросов\n\n"
 
-        # Если добавление нового элемента превысит лимит, начинаем новый чанк
-        if len(current_chunk) + len(survey_text) > 4000:
-            chunks.append(current_chunk)
-            current_chunk = f"Доступные опросы (продолжение):\n\n{survey_text}"
-        else:
-            current_chunk += survey_text
+        response_text += SURVEY_TEXTS['select_survey_prompt']
+        await update.callback_query.edit_message_text(response_text)
 
-    # Добавляем последний чанк с инструкцией
-    if current_chunk:
-        chunks.append(current_chunk + SURVEY_TEXTS['select_survey_prompt'])
-
-    # Отправляем первый чанк
-    if chunks:
-        await update.message.reply_text(chunks[0])
-
-        # Остальные чанки отправляем с задержкой
-        for chunk in chunks[1:]:
-            await asyncio.sleep(0.5)
-            await update.message.reply_text(chunk)
+        # Сохраняем информацию о сообщении меню
+        context.user_data['menu_response_message_id'] = update.callback_query.message.message_id
     else:
-        await update.message.reply_text(SURVEY_TEXTS['no_active_surveys'])
+        # Оригинальная логика для текстовых команд
+        context.user_data['available_surveys'] = unanswered_surveys
+        context.user_data['awaiting_survey_selection'] = True
+
+        chunks = []
+        current_chunk = SURVEY_TEXTS['available_surveys_title']
+
+        for i, survey in enumerate(unanswered_surveys, 1):
+            target = survey['role'] if survey['role'] else "все пользователи"
+            survey_text = (
+                f"{i}. Опрос #{survey['id_survey']}\n"
+                f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+                f"   Вопрос: {survey['question'][:80]}...\n"
+                f"   Для: {target}\n\n"
+            )
+
+            if len(current_chunk) + len(survey_text) > 4000:
+                chunks.append(current_chunk)
+                current_chunk = f"Доступные опросы (продолжение):\n\n{survey_text}"
+            else:
+                current_chunk += survey_text
+
+        if current_chunk:
+            chunks.append(current_chunk + SURVEY_TEXTS['select_survey_prompt'])
+
+        if chunks:
+            await update.message.reply_text(chunks[0])
+            for chunk in chunks[1:]:
+                await asyncio.sleep(0.5)
+                await update.message.reply_text(chunk)
+        else:
+            await update.message.reply_text(SURVEY_TEXTS['no_active_surveys'])
 
     return AWAITING_SURVEY_SELECTION
 

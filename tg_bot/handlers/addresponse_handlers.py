@@ -16,18 +16,16 @@ logger = logging.getLogger(__name__)
 
 async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда для добавления/дополнения ответа на опрос"""
-
-    from tg_bot.handlers.addresponse_handlers import addresponse_conversation
-    return await addresponse_conversation.entry_points[0].callback(update, context)
-
     user_id = context.user_data.get('user_id')
     user_role = context.user_data.get('user_role')
 
     # Команда доступна всем авторизованным пользователям
     if not user_role:
-        await update.message.reply_text(
-            "Сначала авторизуйтесь с помощью /start"
-        )
+        response_text = "Сначала авторизуйтесь с помощью /start"
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return ConversationHandler.END
 
     # Вычисляем дату 3 дня назад
@@ -55,63 +53,88 @@ async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         connection = db_connection.get_connection()
         if not connection:
-            await update.message.reply_text("Ошибка подключения к БД")
+            response_text = "Ошибка подключения к БД"
+            if hasattr(update, 'callback_query') and update.callback_query:
+                await update.callback_query.edit_message_text(response_text)
+            else:
+                await update.message.reply_text(response_text)
             return ConversationHandler.END
 
         cursor = connection.cursor()
         cursor.execute(query, (user_id, three_days_ago))
-        columns = [desc[0] for desc in cursor.description]  # Получаем имена колонок
+        columns = [desc[0] for desc in cursor.description]
         rows = cursor.fetchall()
 
-        # Преобразуем в список словарей
         surveys = []
         for row in rows:
             survey_dict = dict(zip(columns, row))
             surveys.append(survey_dict)
 
         if not surveys:
-            await update.message.reply_text(
+            response_text = (
                 "У вас нет отвеченных опросов за последние 3 дня.\n"
                 "Используйте /response для ответа на новые опросы."
             )
+            if hasattr(update, 'callback_query') and update.callback_query:
+                await update.callback_query.edit_message_text(response_text)
+            else:
+                await update.message.reply_text(response_text)
             return ConversationHandler.END
 
-        # Сохраняем опросы в context
         context.user_data['available_surveys_add'] = surveys
         context.user_data['awaiting_add_response_selection'] = True
 
-        # Формируем список опросов для выбора
-        response_text = "ОТВЕЧЕННЫЕ ОПРОСЫ (за последние 3 дня):\n\n"
+        # Формируем текст для отображения
+        if hasattr(update, 'callback_query') and update.callback_query:
+            # Для меню - показываем краткий список
+            response_text = "ОТВЕЧЕННЫЕ ОПРОСЫ (за последние 3 дня):\n\n"
+            for i, survey in enumerate(surveys[:5], 1):
+                answer_preview = survey['user_answer'][:50] + "..." if survey['user_answer'] and len(
+                    survey['user_answer']) > 50 else survey['user_answer'] or "(пустой ответ)"
+                response_text += (
+                    f"{i}. Опрос #{survey['id_survey']}\n"
+                    f"   Вопрос: {survey['question'][:40]}...\n"
+                    f"   Ответ: {answer_preview}\n\n"
+                )
 
-        for i, survey in enumerate(surveys, 1):
-            # Определяем, для кого опрос
-            target = survey['role'] if survey['role'] else "все пользователи"
+            if len(surveys) > 5:
+                response_text += f"... и еще {len(surveys) - 5} опросов\n\n"
 
-            # Обрезаем текст ответа для отображения
-            answer_preview = survey['user_answer'][:50] + "..." if survey['user_answer'] and len(
-                survey['user_answer']) > 50 else survey['user_answer'] or "(пустой ответ)"
+            response_text += "Введите номер опроса, который хотите дополнить:\nИли используйте /cancel для отмены."
+
+            await update.callback_query.edit_message_text(response_text)
+            # Сохраняем информацию о сообщении меню
+            context.user_data['menu_addresponse_message_id'] = update.callback_query.message.message_id
+        else:
+            # Оригинальная логика для текстовых команд
+            response_text = "ОТВЕЧЕННЫЕ ОПРОСЫ (за последние 3 дня):\n\n"
+            for i, survey in enumerate(surveys, 1):
+                target = survey['role'] if survey['role'] else "все пользователи"
+                answer_preview = survey['user_answer'][:50] + "..." if survey['user_answer'] and len(
+                    survey['user_answer']) > 50 else survey['user_answer'] or "(пустой ответ)"
+                response_text += (
+                    f"{i}. Опрос #{survey['id_survey']}\n"
+                    f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+                    f"   Вопрос: {survey['question'][:60]}...\n"
+                    f"   Для: {target}\n"
+                    f"   Ваш ответ: {answer_preview}\n\n"
+                )
 
             response_text += (
-                f"{i}. Опрос #{survey['id_survey']}\n"
-                f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-                f"   Вопрос: {survey['question'][:60]}...\n"
-                f"   Для: {target}\n"
-                f"   Ваш ответ: {answer_preview}\n\n"
+                "Введите номер опроса, который хотите дополнить:\n"
+                "Или используйте /cancel для отмены."
             )
+            await update.message.reply_text(response_text)
 
-        response_text += (
-            "Введите номер опроса, который хотите дополнить:\n"
-            "Или используйте /cancel для отмены."
-        )
-
-        await update.message.reply_text(response_text)
         return AWAITING_ADD_RESPONSE_SELECTION
 
     except Exception as e:
         logger.error(f"Ошибка при получении отвеченных опросов: {e}", exc_info=True)
-        await update.message.reply_text(
-            "Произошла ошибка при получении данных. Попробуйте позже."
-        )
+        response_text = "Произошла ошибка при получении данных. Попробуйте позже."
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return ConversationHandler.END
     finally:
         if 'cursor' in locals():

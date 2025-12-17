@@ -186,20 +186,16 @@ async def start_command(update, context):
     if user_data:
         # Пользователь уже авторизован
         role_display = get_role_display_name(user_data['role'])
-
-        # Формируем информацию о Jira
         jira_info = "📋 Jira: не указан"
         if user_data.get('jira_name'):
             jira_info = f"Jira: {user_data['jira_name']}"
         elif user_data.get('jira_email'):
             jira_info = f"Jira: {user_data['jira_email']}"
 
-        await update.message.reply_text(
-            REGISTRATION_TEXTS['already_registered'].format(
-                name=user_data['user_name'],
-                role=role_display,
-                jira_info=jira_info
-            )
+        response_text = REGISTRATION_TEXTS['already_registered'].format(
+            name=user_data['user_name'],
+            role=role_display,
+            jira_info=jira_info
         )
 
         context.user_data['user_role'] = user_data['role']
@@ -207,7 +203,13 @@ async def start_command(update, context):
         context.user_data['user_name'] = user_data['user_name']
         context.user_data['jira_account'] = user_data.get('jira_name') or user_data.get('jira_email')
 
-        # ВАЖНО: Обновляем команды для этого пользователя
+        # Проверяем, вызвана ли команда из меню
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
+
+        # Обновляем команды
         try:
             from tg_bot.handlers.menu_handlers import update_user_commands
             await update_user_commands(update, context)
@@ -217,7 +219,14 @@ async def start_command(update, context):
         return ConversationHandler.END
     else:
         # Начинаем процесс регистрации
-        await update.message.reply_text(REGISTRATION_TEXTS['welcome'])
+        response_text = REGISTRATION_TEXTS['welcome']
+
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+            # Сохраняем информацию о сообщении меню
+            context.user_data['menu_start_message_id'] = update.callback_query.message.message_id
+        else:
+            await update.message.reply_text(response_text)
 
         context.user_data['awaiting_password'] = True
         return AWAITING_PASSWORD

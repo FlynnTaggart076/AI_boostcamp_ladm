@@ -14,11 +14,7 @@ async def dailydigest_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     if context.args:
         date_str = context.args[0]
         if not validate_date(date_str):
-            await update.message.reply_text(
-                "Неверный формат даты. Используйте ГГГГ-ММ-ДД\n"
-                "Пример: /dailydigest 2024-01-15"
-            )
-            return
+            response_text = "Неверный формат даты. Используйте ГГГГ-ММ-ДД\nПример: /dailydigest 2024-01-15"
     else:
         # По умолчанию - вчерашний день
         yesterday = datetime.now() - timedelta(days=1)
@@ -28,33 +24,35 @@ async def dailydigest_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     digests = DailyDigestModel.get_daily_digest(date_str)
 
     if not digests:
-        await update.message.reply_text(
-            f"Ежедневный дайджест за {date_str}\n\n"
-            f"Нет данных за указанную дату."
-        )
-        return
+        response_text = f"Ежедневный дайджест за {date_str}\n\nНет данных за указанную дату."
+    else:
+        # Формируем ответ
+        response_text = f"Ежедневный дайджест за {date_str}\n\n"
+        for digest in digests:
+            response_text += f"{digest['text']}\n\n"
 
-    # Формируем ответ
-    response = f"Ежедневный дайджест за {date_str}\n\n"
-
-    for digest in digests:
-        response += f"{digest['text']}\n\n"
-
-    await update.message.reply_text(response)
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        await update.callback_query.edit_message_text(response_text)
+    else:
+        await update.message.reply_text(response_text)
 
 
 async def weeklydigest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /weeklydigest"""
-
     if context.args and len(context.args) >= 2:
         start_date = context.args[0]
         end_date = context.args[1]
 
         if not validate_date(start_date) or not validate_date(end_date):
-            await update.message.reply_text(
+            response_text = (
                 "Неверный формат даты. Используйте ГГГГ-ММ-ДД\n"
                 "Пример: /weeklydigest 2024-01-08 2024-01-14"
             )
+            if hasattr(update, 'callback_query') and update.callback_query:
+                await update.callback_query.edit_message_text(response_text)
+            else:
+                await update.message.reply_text(response_text)
             return
     else:
         # По умолчанию - прошлая неделя
@@ -67,21 +65,19 @@ async def weeklydigest_command(update: Update, context: ContextTypes.DEFAULT_TYP
     digests = WeekDigestModel.get_week_digest(start_date, end_date)
 
     if not digests:
-        await update.message.reply_text(
-            f"Еженедельный дайджест с {start_date} по {end_date}\n\n"
-            f"Нет данных за указанный период."
-        )
-        return
+        response_text = f"Еженедельный дайджест с {start_date} по {end_date}\n\nНет данных за указанный период."
+    else:
+        response_text = f"Еженедельный дайджест с {start_date} по {end_date}\n\n"
+        for digest in digests:
+            date = digest['datetime'].strftime('%d.%m.%Y') if isinstance(digest['datetime'], datetime) else digest['datetime']
+            response_text += f"{date}:\n"
+            response_text += f"{digest['text']}\n\n"
 
-    response = f"Еженедельный дайджест с {start_date} по {end_date}\n\n"
-
-    for digest in digests:
-        date = digest['datetime'].strftime('%d.%m.%Y') if isinstance(digest['datetime'], datetime) else digest[
-            'datetime']
-        response += f"{date}:\n"
-        response += f"{digest['text']}\n\n"
-
-    await update.message.reply_text(response)
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        await update.callback_query.edit_message_text(response_text)
+    else:
+        await update.message.reply_text(response_text)
 
 
 async def blockers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -92,44 +88,44 @@ async def blockers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args:
         date_str = context.args[0]
         if not validate_date(date_str):
-            await update.message.reply_text(
-                "Неверный формат даты. Используйте ГГГГ-ММ-ДД"
-            )
+            response_text = "Неверный формат даты. Используйте ГГГГ-ММ-ДД"
+            if hasattr(update, 'callback_query') and update.callback_query:
+                await update.callback_query.edit_message_text(response_text)
+            else:
+                await update.message.reply_text(response_text)
             return
     else:
         date_str = datetime.now().strftime('%Y-%m-%d')
 
-    # Получаем блокеры за дату
     blockers = BlockerModel.get_blockers_by_date(date_str)
 
     if not blockers:
-        await update.message.reply_text(
-            f"Блокеры за {date_str}\n\n"
-            f"Нет данных о блокерах за указанную дату."
-        )
-        return
+        response_text = f"Блокеры за {date_str}\n\nНет данных о блокерах за указанную дату."
+    else:
+        response_text = f"Блокеры за {date_str}\n\n"
+        critical_count = 0
+        regular_count = 0
 
-    response = f"Блокеры за {date_str}\n\n"
+        for blocker in blockers:
+            if blocker.get('critical'):
+                critical_count += 1
+                response_text += f"КРИТИЧЕСКИЙ:\n"
+            else:
+                regular_count += 1
+                response_text += f"Обычный:\n"
 
-    critical_count = 0
-    regular_count = 0
+            response_text += f"{blocker.get('user_name', 'Неизвестный')}\n"
+            response_text += f"{blocker['text']}\n"
 
-    for blocker in blockers:
-        if blocker.get('critical'):
-            critical_count += 1
-            response += f"КРИТИЧЕСКИЙ:\n"
-        else:
-            regular_count += 1
-            response += f"Обычный:\n"
+            if blocker.get('response'):
+                response_text += f"Ответ: {blocker['response']}\n"
 
-        response += f"{blocker.get('user_name', 'Неизвестный')}\n"
-        response += f"{blocker['text']}\n"
+            response_text += f"Исходный ответ: {blocker.get('answer', 'нет')[:100]}...\n\n"
 
-        if blocker.get('response'):
-            response += f"Ответ: {blocker['response']}\n"
+        response_text += f"Итого: {len(blockers)} блокеров ({critical_count} критических, {regular_count} обычных)"
 
-        response += f"Исходный ответ: {blocker.get('answer', 'нет')[:100]}...\n\n"
-
-    response += f"Итого: {len(blockers)} блокеров ({critical_count} критических, {regular_count} обычных)"
-
-    await update.message.reply_text(response)
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        await update.callback_query.edit_message_text(response_text)
+    else:
+        await update.message.reply_text(response_text)

@@ -96,61 +96,145 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
+    # Маппинг callback_data на команды
+    command_map = {
+        'menu_profile': ('profile', []),
+        'menu_help': ('help', []),
+        'menu_sync': ('syncjira', []),
+        'menu_response': ('response', []),
+        'menu_addresponse': ('addresponse', []),
+        'report_daily': ('dailydigest', []),
+        'report_weekly': ('weeklydigest', []),
+        'report_blockers': ('blockers', []),
+        'survey_create': ('sendsurvey', []),
+        'survey_list': ('allsurveys', []),
+    }
+
     if callback_data == "menu_close":
         await query.edit_message_text("Меню закрыто. Используйте /menu для повторного открытия.")
         return
-
-    elif callback_data == "menu_profile":
-        # Показываем профиль через команду
-        from tg_bot.handlers.auth_handlers import profile_command
-        await profile_command(update, context)
-        # Обновляем меню
-        await show_main_menu(query, role_category)
-
-    elif callback_data == "menu_help":
-        # Показываем справку
-        from tg_bot.bot import help_command
-        await help_command(update, context)
-        # Обновляем меню
-        await show_main_menu(query, role_category)
 
     elif callback_data == "menu_reports":
         if role_category == 'CEO':
             await show_reports_menu(query)
         else:
             await query.edit_message_text("У вас нет доступа к отчетам.")
+        return
 
     elif callback_data == "menu_surveys":
         if role_category == 'CEO':
             await show_surveys_menu(query)
         else:
             await query.edit_message_text("У вас нет доступа к управлению опросами.")
-
-    elif callback_data == "menu_sync":
-        if role_category == 'CEO':
-            # Запускаем синхронизацию
-            await query.edit_message_text(
-                "🔄 Запускаю синхронизацию с Jira...\n"
-                "Это может занять несколько минут.\n\n"
-                "Используйте команду /syncjira для подробностей."
-            )
-            # Можно запустить синхронизацию здесь, но лучше оставить команду
-        else:
-            await query.edit_message_text("У вас нет доступа к синхронизации.")
-
-    elif callback_data == "menu_response":
-        # Запускаем процесс ответа на опрос
-        from tg_bot.handlers.survey_handlers import response_command
-        await response_command(update, context)
-
-    elif callback_data == "menu_addresponse":
-        # Запускаем процесс дополнения ответа
-        from tg_bot.handlers.addresponse_handlers import addresponse_command
-        await addresponse_command(update, context)
+        return
 
     elif callback_data == "menu_back":
         await show_main_menu(query, role_category)
+        return
 
+    # Проверка прав доступа для CEO команд
+    ceo_commands = ['syncjira', 'dailydigest', 'weeklydigest', 'blockers', 'sendsurvey', 'allsurveys']
+
+    if callback_data in command_map:
+        command_name, args = command_map[callback_data]
+
+        # Проверка доступа для CEO команд
+        if command_name in ceo_commands and role_category != 'CEO':
+            await query.edit_message_text(f"У вас нет доступа к команде {command_name}")
+            return
+
+        # Выполняем команду
+        await handle_menu_command(update, context, command_name, args)
+    else:
+        await query.edit_message_text(f"Неизвестная команда меню: {callback_data}")
+
+
+async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE,
+                              command_name: str, args: list = None):
+    """Универсальный обработчик команд из меню"""
+    query = update.callback_query
+
+    # Маппинг команд на функции
+    command_handlers = {
+        'profile': 'tg_bot.bot.profile_command',
+        'help': 'tg_bot.bot.help_command',
+        'allsurveys': 'tg_bot.bot.allsurveys_command',
+        'syncjira': 'tg_bot.bot.syncjira_command',
+        'response': 'tg_bot.handlers.survey_handlers.response_command',
+        'addresponse': 'tg_bot.handlers.addresponse_handlers.addresponse_command',
+        'dailydigest': 'tg_bot.handlers.report_handlers.dailydigest_command',
+        'weeklydigest': 'tg_bot.handlers.report_handlers.weeklydigest_command',
+        'blockers': 'tg_bot.handlers.report_handlers.blockers_command',
+        'sendsurvey': 'tg_bot.handlers.survey_handlers.sendsurvey_command',
+    }
+
+    if command_name not in command_handlers:
+        await query.edit_message_text(f"Команда {command_name} не поддерживается в меню")
+        return
+
+    # Импортируем обработчик
+    module_name, func_name = command_handlers[command_name].rsplit('.', 1)
+    module = __import__(module_name, fromlist=[func_name])
+    handler_func = getattr(module, func_name)
+
+    # Устанавливаем аргументы
+    if args is not None:
+        context.args = args
+
+    # Вызываем обработчик
+    try:
+        await handler_func(update, context)
+    except Exception as e:
+        logger.error(f"Ошибка выполнения команды {command_name} из меню: {e}")
+        await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
+
+def create_message_from_callback(query):
+    """Создает объект Message из CallbackQuery для обработчиков команд"""
+    from telegram import Message
+    from datetime import datetime
+
+    # Создаем fake message
+    fake_message = Message(
+        message_id=query.message.message_id,
+        date=query.message.date or datetime.now(),
+        chat=query.message.chat,
+        text=""  # Будет установлено в зависимости от команды
+    )
+    fake_message.from_user = query.from_user
+    return fake_message
+
+
+async def execute_command_from_menu(update: Update, context: ContextTypes.DEFAULT_TYPE,
+                                    command_name: str, handler_func, args: list = None):
+    """Выполнить команду из меню"""
+    query = update.callback_query
+
+    # Создаем искусственное сообщение
+    fake_message = create_message_from_callback(query)
+    fake_message.text = f"/{command_name} {' '.join(args) if args else ''}"
+
+    # Сохраняем оригинальные данные
+    original_message = update.message
+    original_text = update.message.text if update.message else None
+
+    # Подменяем данные в update
+    update.message = fake_message
+
+    # Устанавливаем аргументы если нужно
+    if args:
+        context.args = args
+
+    try:
+        # Вызываем обработчик
+        await handler_func(update, context)
+    except Exception as e:
+        logger.error(f"Ошибка выполнения команды {command_name} из меню: {e}")
+        await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
+    finally:
+        # Восстанавливаем оригинальные данные
+        update.message = original_message
+        if original_text and update.message:
+            update.message.text = original_text
 
 async def show_main_menu(query, role_category):
     """Показать главное меню"""
@@ -309,6 +393,21 @@ async def update_user_commands(update: Update, context: ContextTypes.DEFAULT_TYP
     except Exception as e:
         logger.error(f"Ошибка обновления команд: {e}")
 
+
+async def handle_menu_command_with_args(update: Update, context: ContextTypes.DEFAULT_TYPE,
+                                        command: str, handler_func, args: list = None):
+    """Универсальная функция для выполнения команд из меню"""
+    query = update.callback_query
+
+    if args:
+        context.args = args
+
+    try:
+        # Вызываем обработчик команды
+        await handler_func(update, context)
+    except Exception as e:
+        logger.error(f"Ошибка выполнения команды {command}: {e}")
+        await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
 
 def setup_menu_handlers(application):
     """Настроить обработчики меню"""

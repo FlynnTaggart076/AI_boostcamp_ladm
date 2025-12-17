@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from email.mime import application
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
@@ -41,54 +42,60 @@ async def cancel_command(update, context):
     return ConversationHandler.END
 
 
-async def help_command(update, context):
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /help с учетом категории ролей"""
     user_role = context.user_data.get('user_role')
 
     if not user_role:
-        await update.message.reply_text(AUTH_TEXTS['not_authorized'])
-        return
-
-    from tg_bot.config.roles_config import get_role_category
-    role_category = get_role_category(user_role)
-
-    if not role_category:
-        await update.message.reply_text(AUTH_TEXTS['unknown_role'])
-        return
-
-    if role_category == 'CEO':
-        help_text = HELP_TEXTS['ceo']
-    elif role_category == 'worker':
-        help_text = HELP_TEXTS['worker']
+        response_text = AUTH_TEXTS['not_authorized']
     else:
-        help_text = HELP_TEXTS['unknown_category']
+        from tg_bot.config.roles_config import get_role_category
+        role_category = get_role_category(user_role)
 
-    await update.message.reply_text(help_text)
+        if not role_category:
+            response_text = AUTH_TEXTS['unknown_role']
+        else:
+            if role_category == 'CEO':
+                response_text = HELP_TEXTS['ceo']
+            elif role_category == 'worker':
+                response_text = HELP_TEXTS['worker']
+            else:
+                response_text = HELP_TEXTS['unknown_category']
+
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        await update.callback_query.edit_message_text(response_text)
+    else:
+        await update.message.reply_text(response_text)
 
 
-async def profile_command(update, context):
+async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показать профиль пользователя"""
     user_role = context.user_data.get('user_role')
     user_name = context.user_data.get('user_name')
     jira_account = context.user_data.get('jira_account')
 
     if not user_role:
-        await update.message.reply_text(AUTH_TEXTS['not_authorized'])
-        return
-
-    chat_id = update.effective_user.id
-
-    await update.message.reply_text(
-        format_profile(
+        response_text = AUTH_TEXTS['not_authorized']
+    else:
+        chat_id = update.effective_user.id
+        response_text = format_profile(
             name=user_name,
             role=user_role,
             jira_account=jira_account,
             chat_id=chat_id
         )
-    )
+
+    # Проверяем, вызвана ли команда из меню (через callback_query)
+    if hasattr(update, 'callback_query') and update.callback_query:
+        # Редактируем существующее сообщение
+        await update.callback_query.edit_message_text(response_text)
+    else:
+        # Отправляем новое сообщение
+        await update.message.reply_text(response_text)
 
 
-async def allsurveys_command(update, context):
+async def allsurveys_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показать созданные опросы"""
     from tg_bot.config.roles_config import get_role_category
 
@@ -96,88 +103,126 @@ async def allsurveys_command(update, context):
     role_category = get_role_category(user_role) if user_role else None
 
     if role_category != 'CEO':
-        await update.message.reply_text(
-            GENERAL_TEXTS['survey_view_permission']
-        )
-        return
-
-    from tg_bot.database.models import SurveyModel
-    surveys = SurveyModel.get_active_surveys()
-
-    if not surveys:
-        await update.message.reply_text(
-            "Нет активных опросов."
-        )
-        return
-
-    # Разбиваем список опросов на части по 4000 символов
-    chunks = []
-    current_chunk = SURVEY_TEXTS['surveys_list_title']
-    chunk_count = 0
-
-    for survey in surveys:
-        role_display = survey['role'] if survey['role'] else 'все'
-        survey_item = SURVEY_TEXTS['survey_item_format'].format(
-            id=survey['id_survey'],
-            question=survey['question'][:50] + ('...' if len(survey['question']) > 50 else ''),
-            role=role_display,
-            time=survey['datetime'].strftime('%d.%m.%Y %H:%M'),
-            status=survey['state']
-        )
-
-        # Если добавление нового элемента превысит лимит, начинаем новый чанк
-        if len(current_chunk) + len(survey_item) > 4000:
-            chunks.append(current_chunk)
-            chunk_count += 1
-            current_chunk = f"Активные опросы (часть {chunk_count + 1}):\n\n{survey_item}"
-        else:
-            current_chunk += survey_item
-
-    # Добавляем последний чанк
-    if current_chunk:
-        chunks.append(current_chunk)
-
-    # Отправляем первый чанк сразу
-    if chunks:
-        await update.message.reply_text(chunks[0])
-
-        # Остальные чанки отправляем с задержкой
-        for chunk in chunks[1:]:
-            await asyncio.sleep(0.5)  # Небольшая задержка между сообщениями
-            await update.message.reply_text(chunk)
-
-        # Добавляем итоговую информацию
-        await update.message.reply_text(f"Всего активных опросов: {len(surveys)}")
+        response_text = GENERAL_TEXTS['survey_view_permission']
     else:
-        await update.message.reply_text(SURVEY_TEXTS['no_active_surveys_found'])
+        from tg_bot.database.models import SurveyModel
+        surveys = SurveyModel.get_active_surveys()
+
+        if not surveys:
+            response_text = "Нет активных опросов."
+        else:
+            # Формируем ответ
+            response_text = SURVEY_TEXTS['surveys_list_title']
+            for survey in surveys:
+                role_display = survey['role'] if survey['role'] else 'все'
+                response_text += SURVEY_TEXTS['survey_item_format'].format(
+                    id=survey['id_survey'],
+                    question=survey['question'][:50] + ('...' if len(survey['question']) > 50 else ''),
+                    role=role_display,
+                    time=survey['datetime'].strftime('%d.%m.%Y %H:%M'),
+                    status=survey['state']
+                )
+            response_text += f"Всего активных опросов: {len(surveys)}"
+
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        # Если ответ слишком длинный, разбиваем на части
+        if len(response_text) > 4000:
+            # Отправляем первую часть
+            first_part = response_text[:4000]
+            await update.callback_query.edit_message_text(first_part)
+
+            # Отправляем остальные части отдельными сообщениями
+            for i in range(4000, len(response_text), 4000):
+                await update.callback_query.message.reply_text(response_text[i:i + 4000])
+                await asyncio.sleep(0.5)
+        else:
+            await update.callback_query.edit_message_text(response_text)
+    else:
+        # Старая логика для текстовых команд
+        if not surveys:
+            await update.message.reply_text("Нет активных опросов.")
+            return
+
+        # Разбиваем список опросов на части по 4000 символов
+        chunks = []
+        current_chunk = SURVEY_TEXTS['surveys_list_title']
+        chunk_count = 0
+
+        for survey in surveys:
+            role_display = survey['role'] if survey['role'] else 'все'
+            survey_item = SURVEY_TEXTS['survey_item_format'].format(
+                id=survey['id_survey'],
+                question=survey['question'][:50] + ('...' if len(survey['question']) > 50 else ''),
+                role=role_display,
+                time=survey['datetime'].strftime('%d.%m.%Y %H:%M'),
+                status=survey['state']
+            )
+
+            if len(current_chunk) + len(survey_item) > 4000:
+                chunks.append(current_chunk)
+                chunk_count += 1
+                current_chunk = f"Активные опросы (часть {chunk_count + 1}):\n\n{survey_item}"
+            else:
+                current_chunk += survey_item
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        if chunks:
+            await update.message.reply_text(chunks[0])
+            for chunk in chunks[1:]:
+                await asyncio.sleep(0.5)
+                await update.message.reply_text(chunk)
+
 
 async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Синхронизация данных Jira - работает в фоне"""
-
     user_role = context.user_data.get('user_role')
 
     if not user_role:
-        await update.message.reply_text(AUTH_TEXTS['not_authorized'])
+        response_text = AUTH_TEXTS['not_authorized']
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return
 
     role_category = get_role_category(user_role)
 
     if role_category != 'CEO':
-        await update.message.reply_text(
-            AUTH_TEXTS['no_permission'].format(
-                role=user_role,
-                required=get_category_display('CEO')
-            )
+        response_text = AUTH_TEXTS['no_permission'].format(
+            role=user_role,
+            required=get_category_display('CEO')
         )
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
         return
+
+    # Проверяем, вызвана ли команда из меню
+    if hasattr(update, 'callback_query') and update.callback_query:
+        # В режиме меню показываем упрощенное сообщение
+        response_text = (
+            "Запуск синхронизации данных Jira...\n\n"
+            "Это может занять несколько минут.\n"
+            "Результат будет отправлен отдельным сообщением."
+        )
+        await update.callback_query.edit_message_text(response_text)
+        # Сохраняем информацию о сообщении меню
+        menu_message = update.callback_query.message
+    else:
+        menu_message = None
 
     # Отправляем начальное сообщение
     message = await update.message.reply_text(
         "Запуск синхронизации данных Jira...\n\n"
         "Это может занять несколько минут.\n"
         "Вы можете продолжать использовать бота!",
-    )
+    ) if not menu_message else menu_message
 
+    # Далее оригинальная логика синхронизации...
     # Получаем текущий event loop
     import asyncio
     loop = asyncio.get_event_loop()
@@ -194,26 +239,27 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Используем asyncio.run_coroutine_threadsafe для отправки результата
             async def send_result():
                 if success:
-                    await message.edit_text(
-                        "Синхронизация завершена успешно!\n\n"
-                        "Все данные Jira обновлены."
-                    )
+                    result_text = "Синхронизация завершена успешно!\n\nВсе данные Jira обновлены."
                 else:
-                    await message.edit_text(
-                        "Синхронизация завершена с ошибками"
-                    )
+                    result_text = "Синхронизация завершена с ошибками"
 
-            # Отправляем задачу в основной event loop
+                # Отправляем результат в то же сообщение меню, если оно есть
+                if menu_message:
+                    await menu_message.edit_text(result_text)
+                else:
+                    await message.edit_text(result_text)
+
             asyncio.run_coroutine_threadsafe(send_result(), loop)
 
         except Exception as e:
             logger.error(f"Ошибка синхронизации в потоке: {e}")
 
-            # Отправляем сообщение об ошибке
             async def send_error():
-                await message.edit_text(
-                    f"Ошибка синхронизации:\n{str(e)[:200]}"
-                )
+                error_text = f"Ошибка синхронизации:\n{str(e)[:200]}"
+                if menu_message:
+                    await menu_message.edit_text(error_text)
+                else:
+                    await message.edit_text(error_text)
 
             asyncio.run_coroutine_threadsafe(send_error(), loop)
 
@@ -224,7 +270,7 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Сохраняем информацию о запущенной синхронизации
     context.user_data['jira_sync_in_progress'] = True
-    context.user_data['jira_sync_message'] = message
+    context.user_data['jira_sync_message'] = message if not menu_message else menu_message
     context.user_data['jira_sync_thread'] = thread
 
 
@@ -262,6 +308,60 @@ def role_required(allowed_categories):
 
     return decorator
 
+
+async def execute_command_via_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, command: str, args: list = None):
+    """Выполнить команду через меню и обновить сообщение"""
+    query = update.callback_query
+
+    try:
+        # Ищем обработчик команды
+        handler = None
+        for h in application.handlers[0]:  # Группа 0 - MessageHandler и CommandHandler
+            if isinstance(h, CommandHandler) and command in h.commands:
+                handler = h
+                break
+
+        if handler:
+            # Создаем искусственное сообщение с командой
+            class FakeMessage:
+                def __init__(self, text, chat, message_id):
+                    self.text = text
+                    self.chat = chat
+                    self.message_id = message_id
+                    self.from_user = update.effective_user
+
+                async def reply_text(self, *args, **kwargs):
+                    # Редактируем существующее сообщение
+                    return await query.edit_message_text(*args, **kwargs)
+
+                async def edit_text(self, *args, **kwargs):
+                    return await query.edit_message_text(*args, **kwargs)
+
+            fake_msg = FakeMessage(
+                f"/{command} {' '.join(args) if args else ''}",
+                update.effective_chat,
+                query.message.message_id
+            )
+
+            # Создаем искусственный update
+            class FakeUpdate:
+                def __init__(self, message, effective_user, effective_chat, callback_query):
+                    self.message = message
+                    self.effective_user = effective_user
+                    self.effective_chat = effective_chat
+                    self.callback_query = callback_query
+
+            fake_update = FakeUpdate(fake_msg, update.effective_user, update.effective_chat, query)
+
+            # Вызываем обработчик
+            await handler.callback(fake_update, context)
+        else:
+            # Если обработчик не найден, используем стандартный подход
+            await query.edit_message_text(f"Команда /{command} не найдена")
+
+    except Exception as e:
+        logger.error(f"Ошибка выполнения команды {command}: {e}")
+        await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
 
 def main():
     """Основная функция запуска бота"""
