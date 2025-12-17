@@ -12,6 +12,7 @@ def validate_date(date_string, date_format="%Y-%m-%d"):
     except ValueError:
         return False
 
+
 def validate_time(time_string, time_format="%H:%M"):
     """Валидация времени"""
     # TODO: реализовать валидацию времени
@@ -21,6 +22,7 @@ def validate_time(time_string, time_format="%H:%M"):
     except ValueError:
         return False
 
+
 def validate_survey_topic(topic):
     """Валидация темы опроса"""
     # TODO: добавить проверку длины темы
@@ -28,6 +30,7 @@ def validate_survey_topic(topic):
     if not topic or len(topic.strip()) < 3:
         return False
     return True
+
 
 def validate_username(username):
     """Валидация имени пользователя"""
@@ -37,10 +40,12 @@ def validate_username(username):
         return False
     return True
 
+
 def validate_role(role):
     """Валидация роли пользователя"""
     # Проверяем, что роль в списке допустимых
     return role in VALID_ROLES
+
 
 def validate_jira_account(jira_account):
     """Валидация Jira аккаунта"""

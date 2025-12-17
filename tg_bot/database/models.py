@@ -1,8 +1,9 @@
-from tg_bot.config.roles_config import ALL_ROLES, ROLE_CATEGORIES
-from tg_bot.config.constants import VALID_ROLES, SURVEY_STATUS
-from tg_bot.database.connection import db_connection
-from psycopg2.extras import RealDictCursor
 import logging
+
+from psycopg2.extras import RealDictCursor
+
+from tg_bot.config.constants import VALID_ROLES
+from tg_bot.database.connection import db_connection
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,6 @@ class UserModel:
         try:
             cursor = connection.cursor()
             cursor.execute(query, (name, telegram_username, tg_id, role, jira_name, jira_email))
-            user_id = cursor.fetchone()[0]
             connection.commit()
             logger.info(f"✅ Пользователь зарегистрирован: {name} (jira: {jira_name})")
             return True
@@ -380,6 +380,67 @@ class SurveyModel:
             connection.close()
 
     @staticmethod
+    def get_surveys_for_role_since(role, date_from):
+        """Получение опросов для роли с ограничением по дате - НОВЫЙ МЕТОД"""
+        if role is None:
+            query = '''
+                SELECT * FROM surveys 
+                WHERE role IS NULL 
+                  AND state = 'active'
+                  AND datetime >= %s
+                ORDER BY datetime DESC;
+                '''
+            params = (date_from,)
+        else:
+            query = '''
+                SELECT * FROM surveys 
+                WHERE role = %s 
+                  AND state = 'active'
+                  AND datetime >= %s
+                ORDER BY datetime DESC;
+                '''
+            params = (role, date_from)
+
+        connection = db_connection.get_connection()
+        if not connection:
+            return []
+        try:
+            cursor = connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, params)
+            surveys = cursor.fetchall()
+            return [dict(survey) for survey in surveys]
+        except Exception as e:
+            logger.error(f"Ошибка получения опросов по роли с датой: {e}")
+            return []
+        finally:
+            cursor.close()
+            connection.close()
+
+    @staticmethod
+    def get_active_surveys_since(date_from):
+        """Получение активных опросов с ограничением по дате - НОВЫЙ МЕТОД"""
+        query = '''
+            SELECT * FROM surveys 
+            WHERE state = 'active'
+              AND datetime >= %s
+            ORDER BY datetime DESC;
+            '''
+        connection = db_connection.get_connection()
+        if not connection:
+            return []
+        try:
+            cursor = connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, (date_from,))
+            surveys = cursor.fetchall()
+            return [dict(survey) for survey in surveys]
+        except Exception as e:
+            logger.error(f"Ошибка получения опросов с датой: {e}")
+            return []
+        finally:
+            cursor.close()
+            connection.close()
+
+    @staticmethod
     def get_surveys_for_role(role):
         """Получение опросов для определенной роли - ИСПОЛЬЗУЕТСЯ"""
         if role is None:
@@ -522,8 +583,6 @@ class JiraDataModel:
         pass
 
 
-
-
 class BlockerModel:
     """Модель блокеров (проблем) - НЕ ИСПОЛЬЗУЕТСЯ в текущей версии"""
 
@@ -549,4 +608,3 @@ class WeekDigestModel:
     def get_week_digest(start_date, end_date):
         """TODO: Реализовать при необходимости"""
         return []
-

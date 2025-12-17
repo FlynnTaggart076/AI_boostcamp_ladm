@@ -123,7 +123,8 @@ class SurveyScheduler:
             logger.error(f"Ошибка при отправке опроса #{survey_id}: {e}")
             logger.error(f"Трассировка ошибки: {traceback.format_exc()}")
 
-    async def get_target_users(self, survey) -> List[Dict]:
+    @staticmethod
+    async def get_target_users(survey) -> List[Dict]:
         """Получение целевых пользователей для опроса"""
 
         if survey['role'] is None:
@@ -178,7 +179,6 @@ class SurveyScheduler:
             logger.info(f"Survey #{survey['id_survey']} sent to user {user_name} (tg_id: {tg_id})")
         except Exception as e:
             logger.error(f"Error sending to user {user_name} (tg_id: {tg_id}): {e}")
-
 
     async def periodic_check(self):
         """Периодическая проверка новых опросов"""

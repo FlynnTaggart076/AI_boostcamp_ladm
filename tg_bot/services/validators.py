@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 from datetime import datetime, timedelta
-from typing import Dict, Tuple, Optional
+from typing import Tuple, Optional
 import logging
 
 from tg_bot.config.constants import VALID_ROLES

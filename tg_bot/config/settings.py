@@ -44,5 +44,28 @@ class Config:
     JIRA_CLEAR_OLD_DATA = os.getenv("JIRA_CLEAR_OLD_DATA", "false").lower() == "true"
     JIRA_MAX_TASKS = int(os.getenv("JIRA_MAX_TASKS", "1000"))
 
+    # НАСТРОЙКИ ПЕРИОДОВ ПОКАЗА ОПРОСОВ (в днях)
+    # Для /allsurveys - сколько дней назад показывать созданные опросы
+    ALLSURVEYS_PERIOD_DAYS = int(os.getenv('ALLSURVEYS_PERIOD_DAYS', '30'))  # по умолчанию 30 дней
+
+    # Для /response - сколько дней назад показывать неотвеченные опросы
+    RESPONSE_PERIOD_DAYS = int(os.getenv('RESPONSE_PERIOD_DAYS', '14'))  # по умолчанию 14 дней (2 недели)
+
+    # Для /addresponse - сколько дней назад показывать отвеченные опросы
+    ADDRESPONSE_PERIOD_DAYS = int(os.getenv('ADDRESPONSE_PERIOD_DAYS', '14'))  # по умолчанию 14 дней (2 недели)
+
+    # НАСТРОЙКИ ПАГИНАЦИИ
+    # Количество элементов на странице
+    PAGINATION_ITEMS_PER_PAGE = int(os.getenv('PAGINATION_ITEMS_PER_PAGE', '5'))
+
+    # Лимиты выборки из БД
+    PAGINATION_MAX_ITEMS = int(os.getenv('PAGINATION_MAX_ITEMS', '200'))
+
+    # Разрешить/запретить пагинацию
+    PAGINATION_ENABLED = os.getenv('PAGINATION_ENABLED', 'true').lower() == 'true'
+
+    DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
+    LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+
 
 config = Config()

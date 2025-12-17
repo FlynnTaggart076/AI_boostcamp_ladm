@@ -62,4 +62,4 @@ async def process_jira_registration(user_id: int, jira_account: str, user_name: 
 
     except Exception as e:
         print(f"Ошибка асинхронной обработки Jira: {e}")
-        return True  # Все равно возвращаем True, регистрация продолжается
+        return True

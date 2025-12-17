@@ -6,15 +6,9 @@ from tg_bot.config.validators import validate_date
 
 
 async def dailydigest_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /dailydigest"""
-    user_role = context.user_data.get('user_role')
 
-    # Определяем дату отчета
-    date_str = None
     if context.args:
         date_str = context.args[0]
-        if not validate_date(date_str):
-            response_text = "Неверный формат даты. Используйте ГГГГ-ММ-ДД\nПример: /dailydigest 2024-01-15"
     else:
         # По умолчанию - вчерашний день
         yesterday = datetime.now() - timedelta(days=1)
@@ -69,7 +63,8 @@ async def weeklydigest_command(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         response_text = f"Еженедельный дайджест с {start_date} по {end_date}\n\n"
         for digest in digests:
-            date = digest['datetime'].strftime('%d.%m.%Y') if isinstance(digest['datetime'], datetime) else digest['datetime']
+            date = digest['datetime'].strftime('%d.%m.%Y') if isinstance(digest['datetime'], datetime) \
+                else digest['datetime']
             response_text += f"{date}:\n"
             response_text += f"{digest['text']}\n\n"
 
@@ -81,10 +76,7 @@ async def weeklydigest_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def blockers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /blockers"""
-    user_role = context.user_data.get('user_role')
 
-    date_str = None
     if context.args:
         date_str = context.args[0]
         if not validate_date(date_str):

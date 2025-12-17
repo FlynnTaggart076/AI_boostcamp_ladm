@@ -3,11 +3,13 @@ import math
 from typing import List, Dict, Tuple
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
+from tg_bot.config.constants import PAGINATION_ITEMS_PER_PAGE
+
 
 class PaginationUtils:
     """Утилиты для работы с пагинацией (только чтение)"""
 
-    ITEMS_PER_PAGE = 5
+    ITEMS_PER_PAGE = PAGINATION_ITEMS_PER_PAGE
 
     @staticmethod
     def get_page_items(items: List[Dict], page: int = 0) -> Tuple[List[Dict], int, int]:
@@ -18,7 +20,12 @@ class PaginationUtils:
             return [], 0, 0
 
         total_pages = math.ceil(len(items) / PaginationUtils.ITEMS_PER_PAGE)
-        page = max(0, min(page, total_pages - 1))
+
+        # Ограничиваем page в пределах допустимых значений
+        if page < 0:
+            page = 0
+        elif page >= total_pages:
+            page = total_pages - 1
 
         start_idx = page * PaginationUtils.ITEMS_PER_PAGE
         end_idx = start_idx + PaginationUtils.ITEMS_PER_PAGE
@@ -37,18 +44,31 @@ class PaginationUtils:
         keyboard = []
         nav_buttons = []
 
+        # Кнопка "Назад" - только если не на первой странице
         if page > 0:
             nav_buttons.append(
                 InlineKeyboardButton("⬅️ Назад", callback_data=f"{callback_prefix}{page - 1}")
             )
+        else:
+            # Неактивная кнопка для первой страницы
+            nav_buttons.append(
+                InlineKeyboardButton("⬅️", callback_data=f"{callback_prefix}{page}")
+            )
 
+        # Номер текущей страницы
         nav_buttons.append(
             InlineKeyboardButton(f"📄 {page + 1}/{total_pages}", callback_data=f"{callback_prefix}info")
         )
 
+        # Кнопка "Вперед" - только если не на последней странице
         if page < total_pages - 1:
             nav_buttons.append(
                 InlineKeyboardButton("➡️ Вперед", callback_data=f"{callback_prefix}{page + 1}")
+            )
+        else:
+            # Неактивная кнопка для последней страницы
+            nav_buttons.append(
+                InlineKeyboardButton("➡️", callback_data=f"{callback_prefix}{page}")
             )
 
         if nav_buttons:
@@ -78,11 +98,13 @@ class PaginationUtils:
                 # Форматирование для опросов
                 target = item.get('role', 'все пользователи') if item.get('role') else "все пользователи"
                 question_preview = item['question'][:60] + "..." if len(item['question']) > 60 else item['question']
-                date_str = item['datetime'].strftime('%d.%m.%Y %H:%M') if hasattr(item['datetime'], 'strftime') else str(item['datetime'])
+                date_str = item['datetime'].strftime('%d.%m.%Y %H:%M') if hasattr(item['datetime'],
+                                                                                  'strftime') else str(item['datetime'])
 
                 if 'user_answer' in item:
                     # Для отвеченных опросов
-                    answer_preview = item['user_answer'][:50] + "..." if item['user_answer'] and len(item['user_answer']) > 50 else item['user_answer'] or "(пустой ответ)"
+                    answer_preview = item['user_answer'][:50] + "..." if item['user_answer'] and len(
+                        item['user_answer']) > 50 else item['user_answer'] or "(пустой ответ)"
                     message += f"{item_num}. Опрос #{item.get('id_survey', '?')}\n"
                     message += f"   📅 {date_str}\n"
                     message += f"   ❓ {question_preview}\n"
@@ -96,8 +118,10 @@ class PaginationUtils:
             else:
                 # Для всех опросов (админский просмотр)
                 target = item.get('role', 'все') if item.get('role') else 'все'
-                question_preview = item.get('question', '')[:60] + "..." if len(item.get('question', '')) > 60 else item.get('question', '')
-                date_str = item['datetime'].strftime('%d.%m.%Y %H:%M') if hasattr(item['datetime'], 'strftime') else str(item['datetime'])
+                question_preview = item.get('question', '')[:60] + "..." if len(
+                    item.get('question', '')) > 60 else item.get('question', '')
+                date_str = item['datetime'].strftime('%d.%m.%Y %H:%M') if hasattr(item['datetime'],
+                                                                                  'strftime') else str(item['datetime'])
 
                 message += f"{item_num}. ID: {item.get('id_survey', '?')}\n"
                 message += f"   ❓ Вопрос: {question_preview}\n"
@@ -114,7 +138,6 @@ class PaginationUtils:
 
         return message
 
-    # Дополнительные методы (если они используются):
     @staticmethod
     def create_pagination_keyboard(
             items: List[Dict],

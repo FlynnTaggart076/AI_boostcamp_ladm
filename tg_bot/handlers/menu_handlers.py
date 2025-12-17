@@ -5,13 +5,12 @@ import telegram
 from telegram import (
     Update,
     InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    MenuButtonCommands,
-    MenuButton
+    InlineKeyboardButton
 )
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
-from tg_bot.config.texts import HELP_TEXTS, AUTH_TEXTS
+
 from tg_bot.config.roles_config import get_role_category
+from tg_bot.config.texts import AUTH_TEXTS
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +24,6 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     role_category = get_role_category(user_role)
-
-    # Создаем клавиатуру в зависимости от категории роли
-    keyboard = []
-
-    # Команды, доступные ВСЕМ авторизованным пользователям
-    common_buttons = [
-        InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
-        InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse"),
-        InlineKeyboardButton("👤 Профиль", callback_data="menu_profile"),
-        InlineKeyboardButton("❓ Помощь", callback_data="menu_help"),
-        InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
-    ]
 
     if role_category == 'CEO':
         # Кнопки для руководителей (дополнительно к общим)
@@ -92,21 +79,6 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     callback_data = query.data
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
-
-    # ВАЖНО: Проверяем, не является ли это callback_data пагинации
-    # Пагинация должна обрабатываться отдельным обработчиком
-    from tg_bot.config.constants import (
-        SURVEY_PAGINATION_PREFIX,
-        ADD_RESPONSE_PAGINATION_PREFIX,
-        ALLSURVEYS_PAGINATION_PREFIX
-    )
-
-    if (callback_data.startswith(SURVEY_PAGINATION_PREFIX) or
-            callback_data.startswith(ADD_RESPONSE_PAGINATION_PREFIX) or
-            callback_data.startswith(ALLSURVEYS_PAGINATION_PREFIX)):
-        # Это callback_data пагинации - пропускаем обработку меню
-        # Он будет обработан в pagination_handlers.py
-        return
 
     # Проверяем, авторизован ли пользователь
     if not user_role:
@@ -179,7 +151,9 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
         await handle_menu_command(update, context, command_name, args)
     else:
-        await query.edit_message_text(f"Неизвестная команда меню: {callback_data}")
+        # Если callback_data не из меню, просто игнорируем - его обработают другие обработчики
+        # НЕ делаем await query.edit_message_text() чтобы не мешать другим обработчикам
+        return
 
 
 async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE,
@@ -287,7 +261,7 @@ async def show_reports_menu(query):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        "📊 **Меню отчетов**\n\n"
+        "📊 **Меню отчеты**\n\n"
         "Выберите тип отчета:",
         reply_markup=reply_markup,
         parse_mode='Markdown'

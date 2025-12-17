@@ -47,6 +47,7 @@ async def _handle_pagination_navigation(query, context, callback_data, prefix, d
 
     if action == "close":
         await query.edit_message_text("Просмотр закрыт.")
+        # Очищаем данные пагинации для этого типа
         context.user_data.pop(data_key, None)
         return
 

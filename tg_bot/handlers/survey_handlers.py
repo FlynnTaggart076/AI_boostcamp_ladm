@@ -151,7 +151,6 @@ async def handle_survey_time(update: Update, context: ContextTypes.DEFAULT_TYPE)
     time_input = update.message.text.strip().lower()
 
     now = datetime.now()
-    survey_datetime = None
 
     try:
         if time_input == 'сейчас':
@@ -468,9 +467,13 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(response_text)
         return ConversationHandler.END
 
-    # Получаем активные опросы
-    active_surveys_for_role = SurveyModel.get_surveys_for_role(user_role)
-    active_surveys_for_all = SurveyModel.get_surveys_for_role(None)
+    from tg_bot.config.constants import RESPONSE_PERIOD_DAYS
+    period_days = RESPONSE_PERIOD_DAYS
+    date_from = datetime.now() - timedelta(days=period_days)
+
+    # Получаем активные опросы с ограничением по дате
+    active_surveys_for_role = SurveyModel.get_surveys_for_role_since(user_role, date_from)
+    active_surveys_for_all = SurveyModel.get_surveys_for_role_since(None, date_from)
     all_active_surveys = active_surveys_for_role + active_surveys_for_all
 
     if not all_active_surveys:
@@ -502,6 +505,9 @@ async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'type': 'response'
     }
 
+    # Логируем для отладки
+    logger.info(f"Пагинация создана для /response: {len(unanswered_surveys)} опросов за 2 недели")
+
     # Всегда показываем пагинацию (независимо от вызова через меню или команду)
     if hasattr(update, 'callback_query') and update.callback_query:
         # Через меню - показываем первую страницу
@@ -524,9 +530,9 @@ async def _show_response_page(query, context, page=0):
 
     page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
 
-    # Форматируем сообщение
+    # Форматируем сообщение с указанием периода
     message = PaginationUtils.format_page_with_numbers(
-        page_items, current_page, total_pages, "📋 ДОСТУПНЫЕ ОПРОСЫ"
+        page_items, current_page, total_pages, "📋 ДОСТУПНЫЕ ОПРОСЫ (2 недели)"
     )
 
     # Создаем клавиатуру навигации

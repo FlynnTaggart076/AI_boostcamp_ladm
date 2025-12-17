@@ -10,16 +10,16 @@ from tg_bot.config.constants import (
     AWAITING_PASSWORD,
     AWAITING_NAME,
     AWAITING_JIRA,
-    AWAITING_ROLE, ALLSURVEYS_PAGINATION_PREFIX
+    AWAITING_ROLE, ALLSURVEYS_PAGINATION_PREFIX, ALLSURVEYS_PERIOD_DAYS
 )
 from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.menu_handlers import setup_bot_commands, setup_menu_handlers
-from tg_bot.handlers.pagination_handlers import setup_pagination_handlers  # ИМПОРТ ДОБАВЛЕН
+from tg_bot.handlers.pagination_handlers import setup_pagination_handlers
 from tg_bot.handlers.scheduler import SurveyScheduler
 
 from tg_bot.config.texts import (
-    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS, SURVEY_TEXTS, PAGINATION_TEXTS
+    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS,
 )
 from tg_bot.handlers.survey_handlers import finish_response_command
 from tg_bot.services.pagination_utils import PaginationUtils
@@ -112,10 +112,16 @@ async def allsurveys_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_text(response_text)
         return
 
-    surveys = SurveyModel.get_active_surveys()
+    # Вычисляем дату N дней назад из настроек
+    from datetime import datetime, timedelta
+    period_days = ALLSURVEYS_PERIOD_DAYS
+    date_from = datetime.now() - timedelta(days=period_days)
+
+    # Получаем опросы с ограничением по дате
+    surveys = SurveyModel.get_active_surveys_since(date_from)
 
     if not surveys:
-        response_text = "Нет активных опросов."
+        response_text = f"Нет активных опросов за последние {period_days} дней."
         if hasattr(update, 'callback_query') and update.callback_query:
             await update.callback_query.edit_message_text(response_text)
         else:
@@ -148,9 +154,12 @@ async def _show_allsurveys_page(query, context, page=0):
 
     page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
 
-    # Форматируем сообщение
+    # Форматируем сообщение с указанием периода
+    from tg_bot.config.constants import ALLSURVEYS_PERIOD_DAYS
+    title = f"📊 ВСЕ АКТИВНЫЕ ОПРОСЫ ({ALLSURVEYS_PERIOD_DAYS} дней)"
+
     message = PaginationUtils.format_page_with_numbers(
-        page_items, current_page, total_pages, "📊 ВСЕ АКТИВНЫЕ ОПРОСЫ"
+        page_items, current_page, total_pages, title
     )
 
     # Создаем клавиатуру навигации
@@ -172,14 +181,18 @@ async def _send_allsurveys_page(message_obj, context, page=0):
     items = user_data.get('pagination_allsurveys', {}).get('items', [])
 
     if not items:
-        await message_obj.reply_text("Нет активных опросов.")
+        from tg_bot.config.constants import ALLSURVEYS_PERIOD_DAYS
+        await message_obj.reply_text(f"Нет активных опросов за последние {ALLSURVEYS_PERIOD_DAYS} дней.")
         return
 
     page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
 
-    # Форматируем сообщение
+    # Форматируем сообщение с указанием периода
+    from tg_bot.config.constants import ALLSURVEYS_PERIOD_DAYS
+    title = f"📊 ВСЕ АКТИВНЫЕ ОПРОСЫ ({ALLSURVEYS_PERIOD_DAYS} дней)"
+
     message = PaginationUtils.format_page_with_numbers(
-        page_items, current_page, total_pages, "📊 ВСЕ АКТИВНЫЕ ОПРОСЫ"
+        page_items, current_page, total_pages, title
     )
 
     # Создаем клавиатуру навигации
@@ -378,7 +391,6 @@ def main():
     # Импортируем обработчики
     from tg_bot.handlers.survey_handlers import survey_response_conversation, survey_creation_conversation
     from tg_bot.handlers.report_handlers import dailydigest_command, weeklydigest_command, blockers_command
-    from tg_bot.handlers.addresponse_handlers import addresponse_command  # Добавляем импорт
 
     # Создаем ConversationHandler для регистрации
     registration_handler = ConversationHandler(
@@ -402,17 +414,16 @@ def main():
         per_chat=True
     )
 
-    # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ
+    setup_pagination_handlers(application)
+
+    # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ (порядок важен!)
     application.add_handler(registration_handler)
     application.add_handler(survey_creation_conversation)
     application.add_handler(survey_response_conversation)
     application.add_handler(addresponse_conversation)
 
-    # Настраиваем обработчики меню
+    # Настраиваем обработчики меню (ПОСЛЕ пагинации!)
     setup_menu_handlers(application)
-
-    # ВАЖНО: Настраиваем обработчики пагинации (ЭТО ДОБАВЛЕНО)
-    setup_pagination_handlers(application)
 
     # Команды
     application.add_handler(CommandHandler("help", help_command))
@@ -447,9 +458,6 @@ def main():
     application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
 
-    # ВАЖНО: УБЕРИТЕ ЭТУ СТРОКУ - она создает конфликт (двойная регистрация)
-    # application.add_handler(CommandHandler("addresponse", addresponse_command))
-
     # Вместо этого используем обертку:
     application.add_handler(CommandHandler("addresponse", addresponse_command_wrapper))
 
@@ -458,20 +466,9 @@ def main():
     # Общий обработчик текстовых сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Запускаем планировщик при старте бота
-    async def startup():
-        await survey_scheduler.start()
-
-        # Настраиваем команды бота при старте
-        await setup_bot_commands(application)
-        logger.info("Команды бота настроены")
-
-        logger.info("Планировщик опросов запущен")
-
     # Исправленная строка - используем asyncio.new_event_loop() вместо get_event_loop()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    task = loop.create_task(startup())
 
     # Запускаем бота
     logger.info("Бот готов к работе")

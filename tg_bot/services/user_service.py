@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 from datetime import datetime
 
 from psycopg2.extras import RealDictCursor

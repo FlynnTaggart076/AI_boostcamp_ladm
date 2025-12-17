@@ -121,7 +121,8 @@ class JiraLoader:
                     all_users.extend(atlassian_users)
 
                     logger.info(
-                        f"Загружено пользователей: {len(users_batch)} (atlassian: {len(atlassian_users)}, всего atlassian: {len(all_users)})")
+                        f"Загружено пользователей: {len(users_batch)} (atlassian: {len(atlassian_users)}"
+                        f", всего atlassian: {len(all_users)})")
 
                     if len(users_batch) < max_results:
                         break
@@ -425,7 +426,8 @@ class JiraLoader:
                     "jql": jql,
                     "startAt": start_at,
                     "maxResults": max_results,
-                    "fields": "summary,status,assignee,reporter,created,updated,priority,issuetype,project,labels,description,customfield_10020,key"
+                    "fields": "summary,status,assignee,reporter,created,updated,priority,"
+                              "issuetype,project,labels,description,customfield_10020,key"
                 }
 
                 response = requests.get(
@@ -565,7 +567,8 @@ class JiraLoader:
             logger.error(f"Ошибка загрузки задач: {e}")
             return False
 
-    def clear_old_data(self) -> bool:
+    @staticmethod
+    def clear_old_data() -> bool:
         """Очистка старых данных перед загрузкой (опционально)"""
         try:
             logger.info("Очистка старых данных Jira...")
@@ -656,6 +659,7 @@ def sync_jira_data_simple(update=None, context=None):
     except Exception as e:
         logger.error(f"Ошибка в синхронной синхронизации: {e}")
         return False
+
 
 # Функции для удобного использования
 def load_jira_data_on_startup(clear_old: bool = False) -> bool:

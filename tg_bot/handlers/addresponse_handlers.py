@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Dict
 
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
 
-from tg_bot.config.texts import PAGINATION_TEXTS
-from tg_bot.database.models import ResponseModel, SurveyModel, UserModel
-from tg_bot.database.connection import db_connection
 from tg_bot.config.constants import (
     AWAITING_ADD_RESPONSE_SELECTION,
     AWAITING_ADD_RESPONSE_PART, ADD_RESPONSE_PAGINATION_PREFIX
 )
+from tg_bot.database.connection import db_connection
+from tg_bot.database.models import ResponseModel
 from tg_bot.services.pagination_utils import PaginationUtils
 
 logger = logging.getLogger(__name__)
@@ -241,10 +238,11 @@ async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text(response_text)
         return ConversationHandler.END
 
-    # Вычисляем дату 3 дня назад
-    three_days_ago = datetime.now() - timedelta(days=3)
+    from tg_bot.config.constants import ADDRESPONSE_PERIOD_DAYS
+    period_days = ADDRESPONSE_PERIOD_DAYS
+    date_from = datetime.now() - timedelta(days=period_days)
 
-    # Получаем все опросы, на которые пользователь уже отвечал за последние 3 дня
+    # Получаем активные опросы, на которые пользователь уже отвечал за последние 2 недели
     query_sql = '''
     SELECT 
         s.id_survey,
@@ -257,10 +255,10 @@ async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     FROM surveys s
     JOIN responses r ON s.id_survey = r.id_survey
     WHERE r.id_user = %s 
-      AND s.datetime >= %s
-      AND s.state = 'active'
+      AND s.datetime >= %s  -- опросы не старше 2 недель
+      AND s.state = 'active'  -- только активные опросы
     ORDER BY s.datetime DESC
-    LIMIT 100;
+    LIMIT 200;
     '''
 
     try:
@@ -274,7 +272,8 @@ async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             return ConversationHandler.END
 
         cursor = connection.cursor()
-        cursor.execute(query_sql, (user_id, three_days_ago))
+        cursor.execute(query_sql, (user_id, date_from))
+
         columns = [desc[0] for desc in cursor.description]
         rows = cursor.fetchall()
 
@@ -283,9 +282,18 @@ async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             survey_dict = dict(zip(columns, row))
             surveys.append(survey_dict)
 
+        # Логируем для отладки
+        logger.info(f"Найдено отвеченных активных опросов за 2 недели для user_id={user_id}: {len(surveys)}")
+        if surveys:
+            survey_ids = [s['id_survey'] for s in surveys]
+            logger.info(f"ID опросов за 2 недели: {survey_ids}")
+            # Дополнительная отладочная информация
+            for s in surveys:
+                logger.info(f"Опрос #{s['id_survey']}: дата={s['datetime']}, статус={s['state']}")
+
         if not surveys:
             response_text = (
-                "У вас нет отвеченных опросов за последние 3 дня.\n"
+                "У вас нет отвеченных активных опросов за последние 2 недели.\n"
                 "Используйте /response для ответа на новые опросы."
             )
             if hasattr(update, 'callback_query') and update.callback_query:
@@ -338,7 +346,7 @@ async def _show_addresponse_page(query, context, page=0):
 
     # Форматируем сообщение
     message = PaginationUtils.format_page_with_numbers(
-        page_items, current_page, total_pages, "📝 ОТВЕЧЕННЫЕ ОПРОСЫ"
+        page_items, current_page, total_pages, "📝 ОТВЕЧЕННЫЕ ОПРОСЫ (2 недели)"
     )
 
     # Создаем клавиатуру навигации
@@ -360,14 +368,14 @@ async def _send_addresponse_page(message_obj, context, page=0):
     items = user_data.get('pagination_addresponse', {}).get('items', [])
 
     if not items:
-        await message_obj.reply_text("У вас нет отвеченных опросов за последние 3 дня.")
+        await message_obj.reply_text("У вас нет отвеченных активных опросов за последние 2 недели.")
         return
 
     page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
 
     # Форматируем сообщение
     message = PaginationUtils.format_page_with_numbers(
-        page_items, current_page, total_pages, "📝 ОТВЕЧЕННЫЕ ОПРОСЫ"
+        page_items, current_page, total_pages, "📝 ОТВЕЧЕННЫЕ ОПРОСЫ (2 недели)"
     )
 
     # Создаем клавиатуру навигации
