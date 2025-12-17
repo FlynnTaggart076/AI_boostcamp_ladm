@@ -397,10 +397,10 @@ def main():
     # Импортируем обработчики
     from tg_bot.handlers.survey_handlers import survey_response_conversation, survey_creation_conversation
     from tg_bot.handlers.report_handlers import dailydigest_command, weeklydigest_command, blockers_command
-    from tg_bot.handlers.role_handlers import setup_role_handlers  # ДОБАВЛЕНО
+    from tg_bot.handlers.role_handlers import setup_role_handlers
+    from tg_bot.handlers.survey_target_handlers import setup_survey_target_handlers  # ДОБАВЛЕНО
 
     # Создаем ConversationHandler для регистрации
-    # ОБНОВЛЕНО: добавляем новое состояние AWAITING_SUBROLE
     from tg_bot.config.constants import AWAITING_SUBROLE
     registration_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start_command)],
@@ -415,9 +415,9 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
             ],
             AWAITING_ROLE: [
-                CallbackQueryHandler(handle_category_selection, pattern=f"^cat_")  # ДОБАВЛЕНО
+                CallbackQueryHandler(handle_category_selection, pattern=f"^cat_")
             ],
-            AWAITING_SUBROLE: [  # ДОБАВЛЕНО НОВОЕ СОСТОЯНИЕ
+            AWAITING_SUBROLE: [
                 CallbackQueryHandler(handle_subtype_selection, pattern=f"^sub_")
             ],
         },
@@ -428,16 +428,19 @@ def main():
 
     setup_pagination_handlers(application)
 
-    # Настраиваем обработчики выбора ролей (ДОБАВЛЕНО)
+    # Настраиваем обработчики выбора ролей
     setup_role_handlers(application)
+
+    # Настраиваем обработчики выбора получателей опроса (ДОБАВЛЕНО)
+    setup_survey_target_handlers(application)
 
     # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ (порядок важен!)
     application.add_handler(registration_handler)
-    application.add_handler(survey_creation_conversation)
+    application.add_handler(survey_creation_conversation)  # ДОЛЖЕН БЫТЬ ДО survey_target_handlers
     application.add_handler(survey_response_conversation)
     application.add_handler(addresponse_conversation)
 
-    # Настраиваем обработчики меню (ПОСЛЕ пагинации!)
+    # Настраиваем обработчики меню
     setup_menu_handlers(application)
 
     # Команды
@@ -473,9 +476,7 @@ def main():
     application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
 
-    # Вместо этого используем обертку:
     application.add_handler(CommandHandler("addresponse", addresponse_command_wrapper))
-
     application.add_handler(CommandHandler("done", finish_response_command))
 
     # Общий обработчик текстовых сообщений

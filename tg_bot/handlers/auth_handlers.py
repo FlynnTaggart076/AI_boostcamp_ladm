@@ -29,7 +29,15 @@ def _cleanup_registration_data(context):
 
 
 async def handle_message(update, context):
-    """Обработка текстовых сообщений"""
+    """Обработка текстовых сообщений - УЛУЧШЕННАЯ ВЕРСИЯ"""
+    # Сначала проверяем, находится ли пользователь в процессе создания опроса
+    if context.user_data.get('creating_survey'):
+        from tg_bot.handlers.survey_handlers import AWAITING_SURVEY_TIME, handle_survey_time
+        # Если пользователь в процессе создания опроса и ожидает ввода времени
+        if 'survey_question' in context.user_data and 'survey_role' in context.user_data:
+            # Это ввод времени для опроса
+            return await handle_survey_time(update, context)
+
     # Если пользователь в процессе регистрации
     if context.user_data.get('awaiting_password'):
         # Проверка пароля

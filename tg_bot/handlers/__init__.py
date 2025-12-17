@@ -6,6 +6,7 @@ from . import scheduler
 from . import menu_handlers
 from . import pagination_handlers
 from . import role_handlers
+from . import survey_target_handlers  # днаюбкемн
 
 __all__ = [
     'auth_handlers',
@@ -15,5 +16,6 @@ __all__ = [
     'scheduler',
     'menu_handlers',
     'pagination_handlers',
-    'role_handlers'
+    'role_handlers',
+    'survey_target_handlers'
 ]

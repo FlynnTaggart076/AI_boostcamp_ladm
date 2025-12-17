@@ -115,7 +115,7 @@ class UserModel:
             cursor = connection.cursor()
             cursor.execute(query, (name, telegram_username, tg_id, role, jira_name, jira_email))
             connection.commit()
-            logger.info(f"✅ Пользователь зарегистрирован: {name} (jira: {jira_name})")
+            logger.info(f"Пользователь зарегистрирован: {name} (jira: {jira_name})")
             return True
         except Exception as e:
             logger.error(f"Ошибка регистрации пользователя: {e}")
@@ -147,7 +147,7 @@ class UserModel:
             cursor.execute(query, (telegram_username, tg_id, role, name, user_id))
             user_id = cursor.fetchone()[0]
             connection.commit()
-            logger.info(f"✅ Пользователь Jira обновлен: ID {user_id}")
+            logger.info(f"Пользователь Jira обновлен: ID {user_id}")
             return True
         except Exception as e:
             logger.error(f"Ошибка обновления пользователя Jira: {e}")
@@ -346,7 +346,7 @@ class SurveyModel:
             ))
             survey_id = cursor.fetchone()[0]
             connection.commit()
-            logger.info(f"✅ Опрос создан с ID: {survey_id}")
+            logger.info(f"Опрос создан с ID: {survey_id}")
             return survey_id
         except Exception as e:
             logger.error(f"Ошибка создания опроса: {e}")
@@ -478,41 +478,13 @@ class ResponseModel:
 
     @staticmethod
     def save_response(response_data):
-        """Сохранение ответа на опрос - ИСПОЛЬЗУЕТСЯ"""
+        """Сохранение ответа на опрос - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
+        id_survey = response_data['id_survey']
+        id_user = response_data['id_user']
+        answer = response_data['answer']
+
         # Сначала проверяем существующий ответ
-        existing_response = ResponseModel.get_user_response(
-            response_data['id_survey'],
-            response_data['id_user']
-        )
-
-        if existing_response:
-            # Обновляем существующий ответ
-            query = '''
-            UPDATE responses 
-            SET answer = %s
-            WHERE id_user = %s AND id_survey = %s
-            RETURNING id_response;
-            '''
-
-            params = (
-                response_data['answer'],
-                response_data['id_user'],
-                response_data['id_survey']
-            )
-        else:
-            # Создаем новый ответ
-            query = '''
-            INSERT INTO responses 
-            (id_user, id_survey, answer)
-            VALUES (%s, %s, %s)
-            RETURNING id_response;
-            '''
-
-            params = (
-                response_data['id_user'],
-                response_data['id_survey'],
-                response_data['answer']
-            )
+        existing_response = ResponseModel.get_user_response(id_survey, id_user)
 
         connection = db_connection.get_connection()
         if not connection:
@@ -520,10 +492,38 @@ class ResponseModel:
 
         try:
             cursor = connection.cursor()
+
+            if existing_response:
+                # Обновляем существующий ответ
+                query = '''
+                    UPDATE responses 
+                    SET answer = %s
+                    WHERE id_user = %s AND id_survey = %s
+                    RETURNING id_response;
+                    '''
+                params = (answer, id_user, id_survey)
+            else:
+                # Создаем новый ответ - БЕЗ УКАЗАНИЯ id_response
+                query = '''
+                    INSERT INTO responses 
+                    (id_user, id_survey, answer)
+                    VALUES (%s, %s, %s)
+                    RETURNING id_response;
+                    '''
+                params = (id_user, id_survey, answer)
+
             cursor.execute(query, params)
-            response_id = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            response_id = result[0] if result else None
             connection.commit()
+
+            if response_id:
+                logger.info(f"Ответ сохранен: ID {response_id} для опроса #{id_survey}")
+            else:
+                logger.warning(f"Ответ не сохранен для опроса #{id_survey}")
+
             return response_id
+
         except Exception as e:
             logger.error(f"Ошибка сохранения ответа: {e}")
             connection.rollback()
@@ -534,11 +534,11 @@ class ResponseModel:
 
     @staticmethod
     def get_user_response(id_survey, id_user):
-        """Получение ответа пользователя на опрос - ИСПОЛЬЗУЕТСЯ"""
+        """Получение ответа пользователя на опрос"""
         query = '''
-        SELECT * FROM responses 
-        WHERE id_survey = %s AND id_user = %s;
-        '''
+            SELECT * FROM responses 
+            WHERE id_survey = %s AND id_user = %s;
+            '''
         connection = db_connection.get_connection()
         if not connection:
             return None

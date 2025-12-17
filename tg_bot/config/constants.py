@@ -7,12 +7,13 @@ AWAITING_PASSWORD = 0
 AWAITING_NAME = 1
 AWAITING_JIRA = 2
 AWAITING_ROLE = 3
-AWAITING_SUBROLE = 4  # НОВОЕ: выбор конкретной роли в категории
+AWAITING_SUBROLE = 4
 
-# Состояния для создания опроса
+# Состояния для создания опроса - ОБНОВЛЕНО
 AWAITING_SURVEY_QUESTION = 10
-AWAITING_SURVEY_ROLE = 11
-AWAITING_SURVEY_TIME = 12
+AWAITING_SURVEY_TARGET = 11
+AWAITING_SURVEY_SUBTARGET = 12
+AWAITING_SURVEY_TIME = 13
 
 # Состояния для ответа на опрос
 AWAITING_SURVEY_SELECTION = 20
@@ -40,6 +41,10 @@ ALLSURVEYS_PAGINATION_PREFIX = "allsurveys_page_"
 # Префиксы для callback_data при выборе ролей
 CATEGORY_SELECTION_PREFIX = "cat_"
 SUBTYPE_SELECTION_PREFIX = "sub_"
+
+# Префиксы для выбора получателей опроса - НОВЫЕ
+SURVEY_TARGET_PREFIX = "survey_target_"
+SURVEY_SUBTARGET_PREFIX = "survey_subtarget_"
 
 # Роли пользователей (для проверок)
 ROLES = {
