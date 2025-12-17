@@ -237,6 +237,48 @@ GENERAL_TEXTS = {
     'survey_view_permission': "Только руководители могут просматривать опросы."
 }
 
+ROLE_SELECTION_TEXTS = {
+    'choose_category': "**Выберите категорию роли:**\n\n"
+                       "*Руководители* - могут создавать опросы, просматривать отчеты\n"
+                       "*Работники* - могут отвечать на опросы",
+
+    'choose_ceo_subtype': "**Выберите конкретную роль руководителя:**\n\n"
+                          "• CEO - руководитель отдела/компании\n"
+                          "• Team Lead - руководитель команды\n"
+                          "• Project Manager - менеджер проектов\n"
+                          "• Department Head - руководитель отдела",
+
+    'choose_worker_subtype': "**Выберите конкретную роль работника:**\n\n"
+                             "• Worker - базовый работник\n"
+                             "• Senior Worker - старший рабочий\n"
+                             "• Specialist - специалист",
+
+    'category_selected': "Вы выбрали категорию: {category}\n\n"
+                         "Теперь выберите конкретную роль:",
+
+    'role_confirmed': "Роль подтверждена: {role_display}\n\n"
+                      "Завершаем регистрацию...",
+}
+
+
+# Функции для получения отображаемых имен
+def get_category_display(category_key):
+    """Получить отображаемое имя категории"""
+    return CATEGORY_DISPLAY.get(category_key, category_key)
+
+
+def get_role_display_with_icon(role_type):
+    """Получить отображаемое имя роли с иконкой"""
+    return ROLE_DISPLAY.get(role_type, f"{role_type}")
+
+
+# Обновим ROLE_SELECTION_TEXTS для использования функций
+ROLE_SELECTION_TEXTS['choose_category'] = (
+    "**Выберите категорию роли:**\n\n"
+    f"{get_category_display('CEO')} - могут создавать опросы, просматривать отчеты\n"
+    f"{get_category_display('worker')} - могут отвечать на опросы"
+)
+
 
 # Важные функции, которые нужно сохранить
 def get_role_display_name(role_type):

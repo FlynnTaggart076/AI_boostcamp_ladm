@@ -2,7 +2,8 @@ import logging
 import asyncio
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes, \
+    CallbackQueryHandler
 
 from tg_bot.config.roles_config import get_role_category
 from tg_bot.config.settings import config
@@ -16,6 +17,7 @@ from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.menu_handlers import setup_bot_commands, setup_menu_handlers
 from tg_bot.handlers.pagination_handlers import setup_pagination_handlers
+from tg_bot.handlers.role_handlers import handle_subtype_selection, handle_category_selection
 from tg_bot.handlers.scheduler import SurveyScheduler
 
 from tg_bot.config.texts import (
@@ -156,7 +158,7 @@ async def _show_allsurveys_page(query, context, page=0):
 
     # Форматируем сообщение с указанием периода
     from tg_bot.config.constants import ALLSURVEYS_PERIOD_DAYS
-    title = f"📊 ВСЕ АКТИВНЫЕ ОПРОСЫ ({ALLSURVEYS_PERIOD_DAYS} дней)"
+    title = f"ВСЕ АКТИВНЫЕ ОПРОСЫ ({ALLSURVEYS_PERIOD_DAYS} дней)"
 
     message = PaginationUtils.format_page_with_numbers(
         page_items, current_page, total_pages, title
@@ -189,7 +191,7 @@ async def _send_allsurveys_page(message_obj, context, page=0):
 
     # Форматируем сообщение с указанием периода
     from tg_bot.config.constants import ALLSURVEYS_PERIOD_DAYS
-    title = f"📊 ВСЕ АКТИВНЫЕ ОПРОСЫ ({ALLSURVEYS_PERIOD_DAYS} дней)"
+    title = f"ВСЕ АКТИВНЫЕ ОПРОСЫ ({ALLSURVEYS_PERIOD_DAYS} дней)"
 
     message = PaginationUtils.format_page_with_numbers(
         page_items, current_page, total_pages, title
@@ -395,8 +397,11 @@ def main():
     # Импортируем обработчики
     from tg_bot.handlers.survey_handlers import survey_response_conversation, survey_creation_conversation
     from tg_bot.handlers.report_handlers import dailydigest_command, weeklydigest_command, blockers_command
+    from tg_bot.handlers.role_handlers import setup_role_handlers  # ДОБАВЛЕНО
 
     # Создаем ConversationHandler для регистрации
+    # ОБНОВЛЕНО: добавляем новое состояние AWAITING_SUBROLE
+    from tg_bot.config.constants import AWAITING_SUBROLE
     registration_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start_command)],
         states={
@@ -410,7 +415,10 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
             ],
             AWAITING_ROLE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+                CallbackQueryHandler(handle_category_selection, pattern=f"^cat_")  # ДОБАВЛЕНО
+            ],
+            AWAITING_SUBROLE: [  # ДОБАВЛЕНО НОВОЕ СОСТОЯНИЕ
+                CallbackQueryHandler(handle_subtype_selection, pattern=f"^sub_")
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel_command)],
@@ -419,6 +427,9 @@ def main():
     )
 
     setup_pagination_handlers(application)
+
+    # Настраиваем обработчики выбора ролей (ДОБАВЛЕНО)
+    setup_role_handlers(application)
 
     # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ (порядок важен!)
     application.add_handler(registration_handler)

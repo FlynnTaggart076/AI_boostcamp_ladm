@@ -5,6 +5,7 @@ from . import report_handlers
 from . import scheduler
 from . import menu_handlers
 from . import pagination_handlers
+from . import role_handlers
 
 __all__ = [
     'auth_handlers',
@@ -13,5 +14,6 @@ __all__ = [
     'report_handlers',
     'scheduler',
     'menu_handlers',
-    'pagination_handlers'
+    'pagination_handlers',
+    'role_handlers'
 ]

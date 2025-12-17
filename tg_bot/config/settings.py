@@ -2,6 +2,26 @@ import os
 import logging
 from dotenv import load_dotenv
 
+# Укажите явно кодировку для .env файла
+env_path = '.env'
+if os.path.exists(env_path):
+    try:
+        # Попробуем прочитать с разными кодировками
+        with open(env_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        # Перезапишем в UTF-8 если нужно
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except UnicodeDecodeError:
+        # Если UTF-8 не работает, попробуем cp1251
+        try:
+            with open(env_path, 'r', encoding='cp1251') as f:
+                content = f.read()
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except:
+            pass
+
 load_dotenv()
 logger = logging.getLogger(__name__)
 
@@ -9,7 +29,7 @@ logger = logging.getLogger(__name__)
 class Config:
     def __init__(self):
         # Проверяем обязательные настройки
-        required_vars = ['BOT_TOKEN', 'DB_HOST', 'DB_NAME', 'REGISTRATION_PASSWORD']  # ДОБАВЛЕНО
+        required_vars = ['BOT_TOKEN', 'DB_HOST', 'DB_NAME', 'REGISTRATION_PASSWORD']
         for var in required_vars:
             if not getattr(self, var):
                 raise ValueError(f"Отсутствует обязательная переменная: {var}")
@@ -19,7 +39,7 @@ class Config:
             jira_vars = ['JIRA_EMAIL', 'JIRA_API_TOKEN']
             for var in jira_vars:
                 if not getattr(self, var):
-                    logger.warning(f"⚠Jira переменная {var} не установлена")
+                    logger.warning(f"⚠ Jira переменная {var} не установлена")
 
     # Бот и БД
     BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -29,7 +49,7 @@ class Config:
     DB_USER = os.getenv("DB_USER")
     DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-    # Пароль регистрации - ДОБАВЛЕНО
+    # Пароль регистрации
     REGISTRATION_PASSWORD = os.getenv("REGISTRATION_PASSWORD")
 
     # Jira настройки
@@ -38,30 +58,20 @@ class Config:
     JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN")
     JIRA_PROJECT_KEY = os.getenv("JIRA_PROJECT_KEY")
 
-    # НОВЫЕ: Управление загрузкой Jira
+    # Управление загрузкой Jira
     JIRA_SYNC_ON_START = os.getenv("JIRA_SYNC_ON_START", "true").lower() == "true"
     JIRA_SYNC_DAYS_BACK = int(os.getenv("JIRA_SYNC_DAYS_BACK", "365"))
     JIRA_CLEAR_OLD_DATA = os.getenv("JIRA_CLEAR_OLD_DATA", "false").lower() == "true"
     JIRA_MAX_TASKS = int(os.getenv("JIRA_MAX_TASKS", "1000"))
 
     # НАСТРОЙКИ ПЕРИОДОВ ПОКАЗА ОПРОСОВ (в днях)
-    # Для /allsurveys - сколько дней назад показывать созданные опросы
-    ALLSURVEYS_PERIOD_DAYS = int(os.getenv('ALLSURVEYS_PERIOD_DAYS', '30'))  # по умолчанию 30 дней
-
-    # Для /response - сколько дней назад показывать неотвеченные опросы
-    RESPONSE_PERIOD_DAYS = int(os.getenv('RESPONSE_PERIOD_DAYS', '14'))  # по умолчанию 14 дней (2 недели)
-
-    # Для /addresponse - сколько дней назад показывать отвеченные опросы
-    ADDRESPONSE_PERIOD_DAYS = int(os.getenv('ADDRESPONSE_PERIOD_DAYS', '14'))  # по умолчанию 14 дней (2 недели)
+    ALLSURVEYS_PERIOD_DAYS = int(os.getenv('ALLSURVEYS_PERIOD_DAYS', '30'))
+    RESPONSE_PERIOD_DAYS = int(os.getenv('RESPONSE_PERIOD_DAYS', '14'))
+    ADDRESPONSE_PERIOD_DAYS = int(os.getenv('ADDRESPONSE_PERIOD_DAYS', '14'))
 
     # НАСТРОЙКИ ПАГИНАЦИИ
-    # Количество элементов на странице
     PAGINATION_ITEMS_PER_PAGE = int(os.getenv('PAGINATION_ITEMS_PER_PAGE', '5'))
-
-    # Лимиты выборки из БД
     PAGINATION_MAX_ITEMS = int(os.getenv('PAGINATION_MAX_ITEMS', '200'))
-
-    # Разрешить/запретить пагинацию
     PAGINATION_ENABLED = os.getenv('PAGINATION_ENABLED', 'true').lower() == 'true'
 
     DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'

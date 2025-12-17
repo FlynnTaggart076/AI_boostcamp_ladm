@@ -1,8 +1,9 @@
 import logging
 
-from telegram.ext import ConversationHandler
+from telegram import Update
+from telegram.ext import ConversationHandler, ContextTypes
 
-from tg_bot.config.constants import AWAITING_PASSWORD, AWAITING_ROLE, AWAITING_JIRA, AWAITING_NAME
+from tg_bot.config.constants import AWAITING_PASSWORD, AWAITING_NAME, AWAITING_JIRA, AWAITING_ROLE
 from tg_bot.config.settings import config
 from tg_bot.config.texts import (
     REGISTRATION_TEXTS, AUTH_TEXTS, get_role_display_name
@@ -10,6 +11,7 @@ from tg_bot.config.texts import (
 from tg_bot.database.models import UserModel
 from tg_bot.services.user_service import user_service
 from tg_bot.services.validators import Validator
+from tg_bot.handlers.role_handlers import show_role_selection
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ def _cleanup_registration_data(context):
     keys_to_remove = [
         'awaiting_password', 'awaiting_name', 'awaiting_jira', 'awaiting_role',
         'user_name', 'jira_account', 'existing_jira_user', 'existing_user_id',
-        'target_users_count', 'survey_role_display'
+        'target_users_count', 'survey_role_display', 'selected_category', 'selected_role'
     ]
 
     for key in keys_to_remove:
@@ -47,7 +49,7 @@ async def handle_message(update, context):
         is_valid, error_msg = Validator.validate_user_name(name)
 
         if not is_valid:
-            await update.message.reply_text(f"❌ {error_msg}. Попробуйте снова:")
+            await update.message.reply_text(f"{error_msg}. Попробуйте снова:")
             return AWAITING_NAME
 
         context.user_data['awaiting_name'] = False
@@ -58,111 +60,24 @@ async def handle_message(update, context):
         return AWAITING_JIRA
 
     elif context.user_data.get('awaiting_jira'):
-        # Валидация Jira аккаунта
-        jira_account = update.message.text.strip()
+        """Обработка ввода Jira аккаунта - ПРОСТАЯ ВЕРСИЯ"""
+        jira_input = update.message.text.strip()
 
-        # Если пользователь ввел "нет" или пустую строку
-        if jira_account.lower() in ['нет', 'н', 'no', 'n', 'skip', 'пропустить', '']:
+        # Проверяем, не хочет ли пользователь пропустить
+        skip_keywords = ['нет', 'н', 'no', 'n', 'skip', 'пропустить']
+
+        if jira_input.lower() in skip_keywords:
             jira_account = None
+            await update.message.reply_text("Jira аккаунт не указан. Продолжаем регистрацию...")
         else:
-            # Валидация Jira аккаунта
-            is_valid, error_msg = Validator.validate_jira_account(jira_account)
-            if not is_valid:
-                await update.message.reply_text(f"❌ {error_msg}. Попробуйте снова:")
-                return AWAITING_JIRA
+            jira_account = jira_input
+            await update.message.reply_text(f"Jira аккаунт сохранен: {jira_account}")
 
         context.user_data['awaiting_jira'] = False
-        context.user_data['awaiting_role'] = True
         context.user_data['jira_account'] = jira_account
 
-        # НОВАЯ ЛОГИКА: Используем UserService
-        if jira_account:
-            jira_user = user_service.find_user_by_jira_account(jira_account)
-
-            if jira_user:
-                context.user_data['existing_jira_user'] = jira_user
-                context.user_data['existing_user_id'] = jira_user['id_user']
-
-                if jira_user.get('tg_username'):
-                    await update.message.reply_text(
-                        f"⚠️  Пользователь с Jira аккаунтом '{jira_account}' уже зарегистрирован.\n"
-                        f"Или выберите роль для продолжения регистрации:"
-                    )
-                else:
-                    await update.message.reply_text(
-                        f"✅ Найден пользователь Jira: {jira_user.get('jira_name', jira_account)}\n"
-                        f"Теперь выберите вашу роль:\n\n" + REGISTRATION_TEXTS['role_options']
-                    )
-            else:
-                await update.message.reply_text(
-                    f"ℹ️  Пользователь с Jira аккаунтом '{jira_account}' не найден.\n"
-                    f"Будет создан новый профиль.\n\n" + REGISTRATION_TEXTS['role_options']
-                )
-        else:
-            await update.message.reply_text(
-                "ℹ️  Jira аккаунт не указан. Будет создан новый профиль.\n\n" +
-                REGISTRATION_TEXTS['role_options']
-            )
-
-        return AWAITING_ROLE
-
-    elif context.user_data.get('awaiting_role'):
-        # Валидация и нормализация роли
-        role_input = update.message.text.strip()
-        is_valid, error_msg, normalized_role = Validator.validate_role(role_input)
-
-        if not is_valid:
-            await update.message.reply_text(f"❌ {error_msg}")
-            return AWAITING_ROLE
-
-        # Получаем Telegram данные
-        user = update.effective_user
-        telegram_username = user.username or str(user.id)
-        tg_id = user.id
-        user_name = context.user_data['user_name']
-        jira_account = context.user_data['jira_account']
-
-        # НОВАЯ ЛОГИКА: Используем UserService для регистрации
-        result = user_service.register_or_update_user(
-            name=user_name,
-            telegram_username=telegram_username,
-            tg_id=tg_id,
-            role=normalized_role,
-            jira_account=jira_account
-        )
-
-        if result['success']:
-            # Сохраняем контекст пользователя
-            user_context = user_service.get_user_context(telegram_username)
-            context.user_data.update(user_context)
-
-            # Формируем сообщение
-            role_display = get_role_display_name(normalized_role)
-            jira_info = f"Jira: {jira_account}" if jira_account else "Jira: не указан"
-
-            await update.message.reply_text(
-                f"✅ {result['message']}!\n\n"
-                f"👤 Имя: {user_name}\n"
-                f"👔 Роль: {role_display}\n"
-                f"📱 Telegram: @{telegram_username}\n"
-                f"{jira_info}\n\n"
-                f"Используйте /help для списка команд."
-            )
-
-            try:
-                from tg_bot.handlers.menu_handlers import update_user_commands
-                await update_user_commands(update, context)
-            except Exception as e:
-                logger.error(f"Ошибка обновления команд: {e}")
-        else:
-            await update.message.reply_text(
-                f"❌ {result['message']}\n"
-                f"Обратитесь к администратору."
-            )
-
-        # Очищаем данные регистрации
-        _cleanup_registration_data(context)
-        return ConversationHandler.END
+        # Показываем выбор роли через кнопки
+        return await show_role_selection(update, context)
 
     # Если пользователь авторизован и отвечает на опрос
     elif context.user_data.get('awaiting_survey_response'):
@@ -174,6 +89,58 @@ async def handle_message(update, context):
     else:
         # Пользователь авторизован, но отправил неизвестную команду
         await update.message.reply_text(AUTH_TEXTS['unknown_command'])
+
+
+async def complete_registration_with_role(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_role: str):
+    """Завершение регистрации с выбранной ролью"""
+    # Получаем Telegram данные
+    user = update.effective_user
+    telegram_username = user.username or str(user.id)
+    tg_id = user.id
+    user_name = context.user_data['user_name']
+    jira_account = context.user_data['jira_account']
+
+    # Используем UserService для регистрации
+    result = user_service.register_or_update_user(
+        name=user_name,
+        telegram_username=telegram_username,
+        tg_id=tg_id,
+        role=selected_role,
+        jira_account=jira_account
+    )
+
+    if result['success']:
+        # Сохраняем контекст пользователя
+        user_context = user_service.get_user_context(telegram_username)
+        context.user_data.update(user_context)
+
+        # Формируем сообщение
+        role_display = get_role_display_name(selected_role)
+        jira_info = f"Jira: {jira_account}" if jira_account else "Jira: не указан"
+
+        await update.callback_query.edit_message_text(
+            f"{result['message']}!\n\n"
+            f"Имя: {user_name}\n"
+            f"Роль: {role_display}\n"
+            f"Telegram: @{telegram_username}\n"
+            f"{jira_info}\n\n"
+            f"Используйте /help для списка команд."
+        )
+
+        try:
+            from tg_bot.handlers.menu_handlers import update_user_commands
+            await update_user_commands(update, context)
+        except Exception as e:
+            logger.error(f"Ошибка обновления команд: {e}")
+    else:
+        await update.callback_query.edit_message_text(
+            f"{result['message']}\n"
+            f"Обратитесь к администратору."
+        )
+
+    # Очищаем данные регистрации
+    _cleanup_registration_data(context)
+    return ConversationHandler.END
 
 
 async def start_command(update, context):
