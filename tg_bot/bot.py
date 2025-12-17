@@ -234,6 +234,7 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Проверяем, вызвана ли команда из меню
+    menu_message = None
     if hasattr(update, 'callback_query') and update.callback_query:
         # В режиме меню показываем упрощенное сообщение
         response_text = (
@@ -245,14 +246,13 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Сохраняем информацию о сообщении меню
         menu_message = update.callback_query.message
     else:
-        menu_message = None
-
-    # Отправляем начальное сообщение
-    message = await update.message.reply_text(
-        "Запуск синхронизации данных Jira...\n\n"
-        "Это может занять несколько минут.\n"
-        "Вы можете продолжать использовать бота!",
-    ) if not menu_message else menu_message
+        response_text = (
+            "Запуск синхронизации данных Jira...\n\n"
+            "Это может занять несколько минут.\n"
+            "Вы можете продолжать использовать бота!"
+        )
+        message_obj = await update.message.reply_text(response_text)
+        menu_message = message_obj  # Переименовываем для единообразия
 
     # Далее оригинальная логика синхронизации...
     # Получаем текущий event loop
@@ -275,11 +275,14 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 else:
                     result_text = "Синхронизация завершена с ошибками"
 
-                # Отправляем результат в то же сообщение меню, если оно есть
+                # Отправляем результат в то же сообщение меню
                 if menu_message:
-                    await menu_message.edit_text(result_text)
-                else:
-                    await message.edit_text(result_text)
+                    # Используем правильный метод в зависимости от типа вызова
+                    if hasattr(update, 'callback_query') and update.callback_query:
+                        await update.callback_query.edit_message_text(result_text)
+                    else:
+                        # Для обычного сообщения обновляем текст
+                        await menu_message.edit_text(result_text)
 
             asyncio.run_coroutine_threadsafe(send_result(), loop)
 
@@ -288,10 +291,11 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             async def send_error():
                 error_text = f"Ошибка синхронизации:\n{str(e)[:200]}"
-                if menu_message:
-                    await menu_message.edit_text(error_text)
+                if hasattr(update, 'callback_query') and update.callback_query:
+                    await update.callback_query.edit_message_text(error_text)
                 else:
-                    await message.edit_text(error_text)
+                    # Для обычного сообщения обновляем текст
+                    await menu_message.edit_text(error_text)
 
             asyncio.run_coroutine_threadsafe(send_error(), loop)
 
@@ -302,7 +306,7 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Сохраняем информацию о запущенной синхронизации
     context.user_data['jira_sync_in_progress'] = True
-    context.user_data['jira_sync_message'] = message if not menu_message else menu_message
+    context.user_data['jira_sync_message'] = menu_message
     context.user_data['jira_sync_thread'] = thread
 
 

@@ -18,6 +18,7 @@ class SurveyScheduler:
     def __init__(self, bot: Bot):
         self.bot = bot
         self.scheduled_tasks: Dict[int, asyncio.Task] = {}
+        self.sent_surveys_cache: set[int] = set()
 
     async def start(self):
         """Запуск планировщика"""
