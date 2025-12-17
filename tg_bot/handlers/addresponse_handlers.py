@@ -11,13 +11,15 @@ from tg_bot.config.constants import (
     AWAITING_ADD_RESPONSE_SELECTION,
     AWAITING_ADD_RESPONSE_PART
 )
-from tg_bot.config.texts import SURVEY_TEXTS
-
 logger = logging.getLogger(__name__)
 
 
 async def addresponse_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда для добавления/дополнения ответа на опрос"""
+
+    from tg_bot.handlers.addresponse_handlers import addresponse_conversation
+    return await addresponse_conversation.entry_points[0].callback(update, context)
+
     user_id = context.user_data.get('user_id')
     user_role = context.user_data.get('user_role')
 

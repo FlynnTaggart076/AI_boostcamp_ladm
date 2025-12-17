@@ -1,0 +1,319 @@
+# -*- coding: utf-8 -*-
+import logging
+
+import telegram
+from telegram import (
+    Update,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    MenuButtonCommands,
+    MenuButton
+)
+from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
+from tg_bot.config.texts import HELP_TEXTS, AUTH_TEXTS
+from tg_bot.config.roles_config import get_role_category
+
+logger = logging.getLogger(__name__)
+
+
+async def set_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Установить кнопку меню с командами"""
+    try:
+        # Устанавливаем меню-кнопку с командами
+        await context.bot.set_chat_menu_button(
+            chat_id=update.effective_chat.id,
+            menu_button=MenuButtonCommands()
+        )
+        logger.info(f"Меню-кнопка установлена для чата {update.effective_chat.id}")
+    except Exception as e:
+        logger.error(f"Ошибка установки меню-кнопки: {e}")
+
+
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /menu - показывает интерактивное меню"""
+    user_role = context.user_data.get('user_role')
+
+    if not user_role:
+        await update.message.reply_text(AUTH_TEXTS['not_authorized'])
+        return
+
+    role_category = get_role_category(user_role)
+
+    # Создаем клавиатуру в зависимости от категории роли
+    keyboard = []
+
+    if role_category == 'CEO':
+        # Кнопки для руководителей
+        keyboard = [
+            [
+                InlineKeyboardButton("📊 Отчеты", callback_data="menu_reports"),
+                InlineKeyboardButton("📝 Опросы", callback_data="menu_surveys")
+            ],
+            [
+                InlineKeyboardButton("🔄 Синхронизация", callback_data="menu_sync"),
+                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile")
+            ],
+            [
+                InlineKeyboardButton("❓ Помощь", callback_data="menu_help"),
+                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+            ]
+        ]
+    elif role_category == 'worker':
+        # Кнопки для работников
+        keyboard = [
+            [
+                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+            ],
+            [
+                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile"),
+                InlineKeyboardButton("❓ Помощь", callback_data="menu_help")
+            ],
+            [
+                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+            ]
+        ]
+    else:
+        await update.message.reply_text(AUTH_TEXTS['unknown_role'])
+        return
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "📱 **Главное меню**\n\n"
+        "Выберите действие:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+
+async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик нажатий кнопок меню"""
+    query = update.callback_query
+    await query.answer()
+
+    callback_data = query.data
+    user_role = context.user_data.get('user_role')
+    role_category = get_role_category(user_role) if user_role else None
+
+    if callback_data == "menu_close":
+        await query.edit_message_text("Меню закрыто. Используйте /menu для повторного открытия.")
+        return
+
+    elif callback_data == "menu_profile":
+        # Показываем профиль через команду
+        from tg_bot.handlers.auth_handlers import profile_command
+        await profile_command(update, context)
+        # Обновляем меню
+        await show_main_menu(query, role_category)
+
+    elif callback_data == "menu_help":
+        # Показываем справку
+        from tg_bot.bot import help_command
+        await help_command(update, context)
+        # Обновляем меню
+        await show_main_menu(query, role_category)
+
+    elif callback_data == "menu_reports":
+        if role_category == 'CEO':
+            await show_reports_menu(query)
+        else:
+            await query.edit_message_text("У вас нет доступа к отчетам.")
+
+    elif callback_data == "menu_surveys":
+        if role_category == 'CEO':
+            await show_surveys_menu(query)
+        else:
+            await query.edit_message_text("У вас нет доступа к управлению опросами.")
+
+    elif callback_data == "menu_sync":
+        if role_category == 'CEO':
+            # Запускаем синхронизацию
+            await query.edit_message_text(
+                "🔄 Запускаю синхронизацию с Jira...\n"
+                "Это может занять несколько минут.\n\n"
+                "Используйте команду /syncjira для подробностей."
+            )
+            # Можно запустить синхронизацию здесь, но лучше оставить команду
+        else:
+            await query.edit_message_text("У вас нет доступа к синхронизации.")
+
+    elif callback_data == "menu_response":
+        # Запускаем процесс ответа на опрос
+        from tg_bot.handlers.survey_handlers import response_command
+        await response_command(update, context)
+
+    elif callback_data == "menu_addresponse":
+        # Запускаем процесс дополнения ответа
+        from tg_bot.handlers.addresponse_handlers import addresponse_command
+        await addresponse_command(update, context)
+
+    elif callback_data == "menu_back":
+        await show_main_menu(query, role_category)
+
+
+async def show_main_menu(query, role_category):
+    """Показать главное меню"""
+    if role_category == 'CEO':
+        keyboard = [
+            [
+                InlineKeyboardButton("📊 Отчеты", callback_data="menu_reports"),
+                InlineKeyboardButton("📝 Опросы", callback_data="menu_surveys")
+            ],
+            [
+                InlineKeyboardButton("🔄 Синхронизация", callback_data="menu_sync"),
+                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile")
+            ],
+            [
+                InlineKeyboardButton("❓ Помощь", callback_data="menu_help"),
+                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+            ]
+        ]
+    elif role_category == 'worker':
+        keyboard = [
+            [
+                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+            ],
+            [
+                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile"),
+                InlineKeyboardButton("❓ Помощь", callback_data="menu_help")
+            ],
+            [
+                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+            ]
+        ]
+    else:
+        return
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        "📱 **Главное меню**\n\n"
+        "Выберите действие:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+
+async def show_reports_menu(query):
+    """Показать меню отчетов"""
+    keyboard = [
+        [
+            InlineKeyboardButton("📅 Ежедневный дайджест", callback_data="report_daily"),
+            InlineKeyboardButton("📊 Еженедельный дайджест", callback_data="report_weekly")
+        ],
+        [
+            InlineKeyboardButton("🚫 Список блокеров", callback_data="report_blockers")
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data="menu_back")
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        "📊 **Меню отчетов**\n\n"
+        "Выберите тип отчета:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+
+async def show_surveys_menu(query):
+    """Показать меню опросов"""
+    keyboard = [
+        [
+            InlineKeyboardButton("➕ Создать опрос", callback_data="survey_create"),
+            InlineKeyboardButton("📋 Просмотреть опросы", callback_data="survey_list")
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data="menu_back")
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        "📝 **Меню опросов**\n\n"
+        "Выберите действие:",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+
+async def setup_bot_commands(application):
+    """Настроить команды бота для меню"""
+    # Базовые команды для ВСЕХ
+    base_commands = [
+        ("start", "Начать работу с ботом"),
+        ("menu", "Открыть меню команд"),
+        ("help", "Показать справку"),
+        ("profile", "Показать профиль"),
+        ("cancel", "Отменить текущую операцию"),
+    ]
+
+    try:
+        await application.bot.set_my_commands(base_commands)
+        logger.info("Базовые команды бота успешно настроены")
+    except Exception as e:
+        logger.error(f"Ошибка настройки команд бота: {e}")
+
+
+async def update_user_commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обновить команды для конкретного пользователя в зависимости от его роли"""
+    user_role = context.user_data.get('user_role')
+
+    if not user_role:
+        # Если пользователь не авторизован, показываем только базовые команды
+        commands = [
+            ("start", "Начать работу с ботом"),
+            ("help", "Показать справку"),
+            ("cancel", "Отменить текущую операцию"),
+        ]
+    else:
+        from tg_bot.config.roles_config import get_role_category
+        role_category = get_role_category(user_role)
+
+        # Базовые команды для авторизованных
+        commands = [
+            ("start", "Начать работу с ботом"),
+            ("menu", "Открыть меню команд"),
+            ("help", "Показать справку"),
+            ("profile", "Показать профиль"),
+            ("cancel", "Отменить текущую операцию"),
+            ("response", "Ответить на опрос"),
+            ("addresponse", "Дополнить ответ на опрос"),
+            ("done", "Завершить ответ на опрос"),
+        ]
+
+        if role_category == 'CEO':
+            # Добавляем команды для руководителей
+            ceo_commands = [
+                ("sendsurvey", "Создать и отправить опрос"),
+                ("allsurveys", "Просмотреть созданные опросы"),
+                ("syncjira", "Синхронизировать данные с Jira"),
+                ("dailydigest", "Ежедневный дайджест"),
+                ("weeklydigest", "Еженедельный дайджест"),
+                ("blockers", "Список блокеров"),
+            ]
+            commands.extend(ceo_commands)
+
+    try:
+        await context.bot.set_my_commands(
+            commands,
+            scope=telegram.BotCommandScopeChat(update.effective_chat.id)
+        )
+        logger.info(f"Команды обновлены для пользователя {update.effective_user.id}")
+    except Exception as e:
+        logger.error(f"Ошибка обновления команд: {e}")
+
+
+def setup_menu_handlers(application):
+    """Настроить обработчики меню"""
+    application.add_handler(CommandHandler("menu", menu_command))
+    application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
+    application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^report_"))
+    application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^survey_"))
+

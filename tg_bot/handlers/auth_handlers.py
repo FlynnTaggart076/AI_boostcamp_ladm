@@ -150,6 +150,12 @@ async def handle_message(update, context):
                 f"{jira_info}\n\n"
                 f"Используйте /help для списка команд."
             )
+
+            try:
+                from tg_bot.handlers.menu_handlers import update_user_commands
+                await update_user_commands(update, context)
+            except Exception as e:
+                logger.error(f"Ошибка обновления команд: {e}")
         else:
             await update.message.reply_text(
                 f"❌ {result['message']}\n"
@@ -167,6 +173,7 @@ async def handle_message(update, context):
     else:
         # Пользователь авторизован, но отправил неизвестную команду
         await update.message.reply_text(AUTH_TEXTS['unknown_command'])
+
 
 async def start_command(update, context):
     """Обработчик команды /start"""
@@ -199,6 +206,13 @@ async def start_command(update, context):
         context.user_data['user_id'] = user_data['id_user']
         context.user_data['user_name'] = user_data['user_name']
         context.user_data['jira_account'] = user_data.get('jira_name') or user_data.get('jira_email')
+
+        # ВАЖНО: Обновляем команды для этого пользователя
+        try:
+            from tg_bot.handlers.menu_handlers import update_user_commands
+            await update_user_commands(update, context)
+        except Exception as e:
+            logger.error(f"Ошибка обновления команд: {e}")
 
         return ConversationHandler.END
     else:

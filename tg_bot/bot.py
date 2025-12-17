@@ -14,6 +14,7 @@ from tg_bot.config.constants import (
 )
 from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
+from tg_bot.handlers.menu_handlers import setup_bot_commands, setup_menu_handlers
 from tg_bot.handlers.scheduler import SurveyScheduler
 
 from tg_bot.config.texts import (
@@ -261,6 +262,7 @@ def role_required(allowed_categories):
 
     return decorator
 
+
 def main():
     """Основная функция запуска бота"""
     application = Application.builder().token(config.BOT_TOKEN).build()
@@ -305,9 +307,13 @@ def main():
     survey_scheduler = SurveyScheduler(application.bot)
     application.bot_data['survey_scheduler'] = survey_scheduler
 
+    # Настраиваем команды бота для меню
+    application.add_handler(CommandHandler("setupcommands", lambda update, context: setup_bot_commands(application)))
+
     # Импортируем обработчики
     from tg_bot.handlers.survey_handlers import survey_response_conversation, survey_creation_conversation
     from tg_bot.handlers.report_handlers import dailydigest_command, weeklydigest_command, blockers_command
+    from tg_bot.handlers.addresponse_handlers import addresponse_command  # Добавляем импорт
 
     # Создаем ConversationHandler для регистрации
     registration_handler = ConversationHandler(
@@ -337,6 +343,9 @@ def main():
     application.add_handler(survey_response_conversation)
     application.add_handler(addresponse_conversation)
 
+    # Настраиваем обработчики меню
+    setup_menu_handlers(application)
+
     # Команды
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("profile", profile_command))
@@ -364,6 +373,7 @@ def main():
     application.add_handler(CommandHandler("weeklydigest", weeklydigest_wrapper))
     application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
+    application.add_handler(CommandHandler("addresponse", addresponse_command))  # Добавляем команду
     application.add_handler(CommandHandler("done", finish_response_command))
 
     # Общий обработчик текстовых сообщений
@@ -372,6 +382,11 @@ def main():
     # Запускаем планировщик при старте бота
     async def startup():
         await survey_scheduler.start()
+
+        # Настраиваем команды бота при старте
+        await setup_bot_commands(application)
+        logger.info("Команды бота настроены")
+
         logger.info("Планировщик опросов запущен")
 
     # Исправленная строка - используем asyncio.new_event_loop() вместо get_event_loop()
@@ -382,6 +397,7 @@ def main():
     # Запускаем бота
     logger.info("Бот готов к работе")
     application.run_polling(drop_pending_updates=True)
+
 
 if __name__ == '__main__':
     main()
