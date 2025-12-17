@@ -1,15 +1,13 @@
-from telegram.ext import ConversationHandler
 import logging
-from tg_bot.config.constants import AWAITING_PASSWORD, AWAITING_ROLE, AWAITING_JIRA, AWAITING_NAME, \
-    REGISTRATION_PASSWORD
+
+from telegram.ext import ConversationHandler
+
+from tg_bot.config.constants import AWAITING_PASSWORD, AWAITING_ROLE, AWAITING_JIRA, AWAITING_NAME
 from tg_bot.config.settings import config
-from tg_bot.database.models import UserModel
-from tg_bot.handlers.survey_handlers import handle_survey_response
-from tg_bot.services.jira_handler import process_jira_registration
 from tg_bot.config.texts import (
-    REGISTRATION_TEXTS, AUTH_TEXTS, ROLE_DISPLAY,
-    get_role_display_name, format_registration_complete
+    REGISTRATION_TEXTS, AUTH_TEXTS, get_role_display_name
 )
+from tg_bot.database.models import UserModel
 from tg_bot.services.user_service import user_service
 from tg_bot.services.validators import Validator
 
@@ -168,8 +166,11 @@ async def handle_message(update, context):
 
     # Если пользователь авторизован и отвечает на опрос
     elif context.user_data.get('awaiting_survey_response'):
-        return await handle_survey_response(update, context)
-
+        from tg_bot.handlers.survey_handlers import handle_response_part
+        return await handle_response_part(update, context)
+    elif context.user_data.get('awaiting_add_response_part'):
+        from tg_bot.handlers.addresponse_handlers import handle_add_response_part
+        return await handle_add_response_part(update, context)
     else:
         # Пользователь авторизован, но отправил неизвестную команду
         await update.message.reply_text(AUTH_TEXTS['unknown_command'])

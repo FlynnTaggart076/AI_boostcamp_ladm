@@ -1,6 +1,5 @@
 import logging
 import asyncio
-from email.mime import application
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
@@ -11,17 +10,19 @@ from tg_bot.config.constants import (
     AWAITING_PASSWORD,
     AWAITING_NAME,
     AWAITING_JIRA,
-    AWAITING_ROLE
+    AWAITING_ROLE, ALLSURVEYS_PAGINATION_PREFIX
 )
 from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.menu_handlers import setup_bot_commands, setup_menu_handlers
+from tg_bot.handlers.pagination_handlers import setup_pagination_handlers  # ИМПОРТ ДОБАВЛЕН
 from tg_bot.handlers.scheduler import SurveyScheduler
 
 from tg_bot.config.texts import (
-    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS, SURVEY_TEXTS
+    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS, SURVEY_TEXTS, PAGINATION_TEXTS
 )
 from tg_bot.handlers.survey_handlers import finish_response_command
+from tg_bot.services.pagination_utils import PaginationUtils
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -96,84 +97,102 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def allsurveys_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показать созданные опросы"""
+    """Показать созданные опросы с пагинацией"""
     from tg_bot.config.roles_config import get_role_category
+    from tg_bot.database.models import SurveyModel
 
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
     if role_category != 'CEO':
         response_text = GENERAL_TEXTS['survey_view_permission']
-    else:
-        from tg_bot.database.models import SurveyModel
-        surveys = SurveyModel.get_active_surveys()
-
-        if not surveys:
-            response_text = "Нет активных опросов."
-        else:
-            # Формируем ответ
-            response_text = SURVEY_TEXTS['surveys_list_title']
-            for survey in surveys:
-                role_display = survey['role'] if survey['role'] else 'все'
-                response_text += SURVEY_TEXTS['survey_item_format'].format(
-                    id=survey['id_survey'],
-                    question=survey['question'][:50] + ('...' if len(survey['question']) > 50 else ''),
-                    role=role_display,
-                    time=survey['datetime'].strftime('%d.%m.%Y %H:%M'),
-                    status=survey['state']
-                )
-            response_text += f"Всего активных опросов: {len(surveys)}"
-
-    # Проверяем, вызвана ли команда из меню
-    if hasattr(update, 'callback_query') and update.callback_query:
-        # Если ответ слишком длинный, разбиваем на части
-        if len(response_text) > 4000:
-            # Отправляем первую часть
-            first_part = response_text[:4000]
-            await update.callback_query.edit_message_text(first_part)
-
-            # Отправляем остальные части отдельными сообщениями
-            for i in range(4000, len(response_text), 4000):
-                await update.callback_query.message.reply_text(response_text[i:i + 4000])
-                await asyncio.sleep(0.5)
-        else:
+        if hasattr(update, 'callback_query') and update.callback_query:
             await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
+        return
+
+    surveys = SurveyModel.get_active_surveys()
+
+    if not surveys:
+        response_text = "Нет активных опросов."
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
+        return
+
+    # Сохраняем опросы для пагинации
+    context.user_data['pagination_allsurveys'] = {
+        'items': surveys,
+        'type': 'allsurveys'
+    }
+
+    # Всегда показываем пагинацию
+    if hasattr(update, 'callback_query') and update.callback_query:
+        # Через меню
+        await _show_allsurveys_page(query=update.callback_query, context=context, page=0)
     else:
-        # Старая логика для текстовых команд
-        if not surveys:
-            await update.message.reply_text("Нет активных опросов.")
-            return
+        # Через текстовую команду
+        await _send_allsurveys_page(message_obj=update.message, context=context, page=0)
 
-        # Разбиваем список опросов на части по 4000 символов
-        chunks = []
-        current_chunk = SURVEY_TEXTS['surveys_list_title']
-        chunk_count = 0
 
-        for survey in surveys:
-            role_display = survey['role'] if survey['role'] else 'все'
-            survey_item = SURVEY_TEXTS['survey_item_format'].format(
-                id=survey['id_survey'],
-                question=survey['question'][:50] + ('...' if len(survey['question']) > 50 else ''),
-                role=role_display,
-                time=survey['datetime'].strftime('%d.%m.%Y %H:%M'),
-                status=survey['state']
-            )
+async def _show_allsurveys_page(query, context, page=0):
+    """Показать страницу с пагинацией всех опросов (для меню)"""
+    user_data = context.user_data
+    items = user_data.get('pagination_allsurveys', {}).get('items', [])
 
-            if len(current_chunk) + len(survey_item) > 4000:
-                chunks.append(current_chunk)
-                chunk_count += 1
-                current_chunk = f"Активные опросы (часть {chunk_count + 1}):\n\n{survey_item}"
-            else:
-                current_chunk += survey_item
+    if not items:
+        await query.edit_message_text("Нет активных опросов.")
+        return
 
-        if current_chunk:
-            chunks.append(current_chunk)
+    page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
 
-        if chunks:
-            await update.message.reply_text(chunks[0])
-            for chunk in chunks[1:]:
-                await asyncio.sleep(0.5)
-                await update.message.reply_text(chunk)
+    # Форматируем сообщение
+    message = PaginationUtils.format_page_with_numbers(
+        page_items, current_page, total_pages, "📊 ВСЕ АКТИВНЫЕ ОПРОСЫ"
+    )
+
+    # Создаем клавиатуру навигации
+    keyboard = PaginationUtils.create_pagination_navigation(
+        page=current_page,
+        total_pages=total_pages,
+        callback_prefix=ALLSURVEYS_PAGINATION_PREFIX
+    )
+
+    await query.edit_message_text(
+        message,
+        reply_markup=keyboard
+    )
+
+
+async def _send_allsurveys_page(message_obj, context, page=0):
+    """Отправить страницу всех опросов (для текстовой команды)"""
+    user_data = context.user_data
+    items = user_data.get('pagination_allsurveys', {}).get('items', [])
+
+    if not items:
+        await message_obj.reply_text("Нет активных опросов.")
+        return
+
+    page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
+
+    # Форматируем сообщение
+    message = PaginationUtils.format_page_with_numbers(
+        page_items, current_page, total_pages, "📊 ВСЕ АКТИВНЫЕ ОПРОСЫ"
+    )
+
+    # Создаем клавиатуру навигации
+    keyboard = PaginationUtils.create_pagination_navigation(
+        page=current_page,
+        total_pages=total_pages,
+        callback_prefix=ALLSURVEYS_PAGINATION_PREFIX
+    )
+
+    await message_obj.reply_text(
+        message,
+        reply_markup=keyboard
+    )
 
 
 async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -309,60 +328,6 @@ def role_required(allowed_categories):
     return decorator
 
 
-async def execute_command_via_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, command: str, args: list = None):
-    """Выполнить команду через меню и обновить сообщение"""
-    query = update.callback_query
-
-    try:
-        # Ищем обработчик команды
-        handler = None
-        for h in application.handlers[0]:  # Группа 0 - MessageHandler и CommandHandler
-            if isinstance(h, CommandHandler) and command in h.commands:
-                handler = h
-                break
-
-        if handler:
-            # Создаем искусственное сообщение с командой
-            class FakeMessage:
-                def __init__(self, text, chat, message_id):
-                    self.text = text
-                    self.chat = chat
-                    self.message_id = message_id
-                    self.from_user = update.effective_user
-
-                async def reply_text(self, *args, **kwargs):
-                    # Редактируем существующее сообщение
-                    return await query.edit_message_text(*args, **kwargs)
-
-                async def edit_text(self, *args, **kwargs):
-                    return await query.edit_message_text(*args, **kwargs)
-
-            fake_msg = FakeMessage(
-                f"/{command} {' '.join(args) if args else ''}",
-                update.effective_chat,
-                query.message.message_id
-            )
-
-            # Создаем искусственный update
-            class FakeUpdate:
-                def __init__(self, message, effective_user, effective_chat, callback_query):
-                    self.message = message
-                    self.effective_user = effective_user
-                    self.effective_chat = effective_chat
-                    self.callback_query = callback_query
-
-            fake_update = FakeUpdate(fake_msg, update.effective_user, update.effective_chat, query)
-
-            # Вызываем обработчик
-            await handler.callback(fake_update, context)
-        else:
-            # Если обработчик не найден, используем стандартный подход
-            await query.edit_message_text(f"Команда /{command} не найдена")
-
-    except Exception as e:
-        logger.error(f"Ошибка выполнения команды {command}: {e}")
-        await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
-
 def main():
     """Основная функция запуска бота"""
     application = Application.builder().token(config.BOT_TOKEN).build()
@@ -446,6 +411,9 @@ def main():
     # Настраиваем обработчики меню
     setup_menu_handlers(application)
 
+    # ВАЖНО: Настраиваем обработчики пагинации (ЭТО ДОБАВЛЕНО)
+    setup_pagination_handlers(application)
+
     # Команды
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("profile", profile_command))
@@ -478,7 +446,13 @@ def main():
     application.add_handler(CommandHandler("weeklydigest", weeklydigest_wrapper))
     application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
-    application.add_handler(CommandHandler("addresponse", addresponse_command))  # Добавляем команду
+
+    # ВАЖНО: УБЕРИТЕ ЭТУ СТРОКУ - она создает конфликт (двойная регистрация)
+    # application.add_handler(CommandHandler("addresponse", addresponse_command))
+
+    # Вместо этого используем обертку:
+    application.add_handler(CommandHandler("addresponse", addresponse_command_wrapper))
+
     application.add_handler(CommandHandler("done", finish_response_command))
 
     # Общий обработчик текстовых сообщений

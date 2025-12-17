@@ -93,12 +93,26 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
+    # ВАЖНО: Проверяем, не является ли это callback_data пагинации
+    # Пагинация должна обрабатываться отдельным обработчиком
+    from tg_bot.config.constants import (
+        SURVEY_PAGINATION_PREFIX,
+        ADD_RESPONSE_PAGINATION_PREFIX,
+        ALLSURVEYS_PAGINATION_PREFIX
+    )
+
+    if (callback_data.startswith(SURVEY_PAGINATION_PREFIX) or
+            callback_data.startswith(ADD_RESPONSE_PAGINATION_PREFIX) or
+            callback_data.startswith(ALLSURVEYS_PAGINATION_PREFIX)):
+        # Это callback_data пагинации - пропускаем обработку меню
+        # Он будет обработан в pagination_handlers.py
+        return
+
     # Проверяем, авторизован ли пользователь
     if not user_role:
         await query.edit_message_text("Сначала авторизуйтесь с помощью /start")
         return
 
-    # Обработка простых команд, которые только показывают сообщение
     simple_commands = {
         'menu_response': ('ответа на опрос', 'response'),
         'menu_addresponse': ('дополнения старого ответа', 'addresponse'),
@@ -107,11 +121,16 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     if callback_data in simple_commands:
         action_name, command = simple_commands[callback_data]
-        await query.edit_message_text(
-            f"Для {action_name} нажмите команду /{command}",
-            parse_mode='Markdown'
-        )
-        return
+        # Вместо редиректа на команду, вызываем обработчик напрямую
+        if command == 'response':
+            from tg_bot.handlers.survey_handlers import response_command
+            return await response_command(update, context)
+        elif command == 'addresponse':
+            from tg_bot.handlers.addresponse_handlers import addresponse_command
+            return await addresponse_command(update, context)
+        elif command == 'sendsurvey':
+            from tg_bot.handlers.survey_handlers import sendsurvey_command
+            return await sendsurvey_command(update, context)
 
     # Маппинг callback_data на команды для остальных кнопок
     command_map = {

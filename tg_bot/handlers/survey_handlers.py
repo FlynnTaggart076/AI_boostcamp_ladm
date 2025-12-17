@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
@@ -12,10 +13,14 @@ from tg_bot.config.constants import (
     AWAITING_SURVEY_ROLE,
     AWAITING_SURVEY_TIME,
     AWAITING_SURVEY_SELECTION,
-    AWAITING_SURVEY_RESPONSE, AWAITING_SURVEY_RESPONSE_PART
+    AWAITING_SURVEY_RESPONSE_PART, SURVEY_PAGINATION_PREFIX
 )
 from tg_bot.config.texts import SURVEY_TEXTS, GENERAL_TEXTS
+from tg_bot.services.pagination_utils import PaginationUtils
 from tg_bot.services.validators import Validator
+
+logger = logging.getLogger(__name__)
+
 
 async def handle_survey_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка вопроса для опроса"""
@@ -51,7 +56,7 @@ async def cancel_survey_response(update: Update, context: ContextTypes.DEFAULT_T
     for key in ['current_survey_id', 'current_survey_question',
                 'current_survey_datetime', 'awaiting_survey_response',
                 'available_surveys', 'awaiting_survey_selection',
-                'response_parts']:
+                'response_parts', 'pagination_surveys']:
         context.user_data.pop(key, None)
 
     return ConversationHandler.END
@@ -82,79 +87,6 @@ async def sendsurvey_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     context.user_data['creating_survey'] = True
     return AWAITING_SURVEY_QUESTION
-
-
-async def handle_survey_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка ответа на опрос"""
-    # Проверяем, что пользователь действительно отвечает на опрос
-    if not context.user_data.get('awaiting_survey_response'):
-        # Если не в режиме ответа, игнорируем
-        return
-
-    if not context.user_data.get('current_survey_id'):
-        await update.message.reply_text(
-            "Ошибка: нет активного опроса для ответа. Используйте /response чтобы начать."
-        )
-        # Сбрасываем флаг
-        context.user_data.pop('awaiting_survey_response', None)
-        return ConversationHandler.END
-
-    response_text = update.message.text.strip()
-
-    if len(response_text) < 3:
-        await update.message.reply_text(
-            "Ответ должен содержать минимум 3 символа. Попробуйте снова:"
-        )
-        return AWAITING_SURVEY_RESPONSE
-
-    # Получаем информацию об опросе
-    survey_id = context.user_data['current_survey_id']
-    question = context.user_data.get('current_survey_question', 'Без вопроса')
-    survey_date = context.user_data.get('current_survey_datetime')
-
-    # Сохраняем ответ в БД
-    response_data = {
-        'id_survey': survey_id,
-        'id_user': context.user_data['user_id'],
-        'answer': response_text
-    }
-
-    response_id = ResponseModel.save_response(response_data)
-
-    if response_id:
-        # Форматируем дату для сообщения
-        date_str = ""
-        if survey_date:
-            if isinstance(survey_date, datetime):
-                date_str = f"{survey_date.strftime('%d.%m.%Y %H:%M')}"
-            elif isinstance(survey_date, str):
-                date_str = survey_date
-            else:
-                date_str = str(survey_date)
-
-        if date_str:
-            await update.message.reply_text(
-                f"Ваш ответ сохранен!\n\n"
-                f"Опрос #{survey_id}\n"
-                f"Вопрос: {question[:100]}...\n"
-                f"Дата опроса: {date_str}"
-            )
-        else:
-            await update.message.reply_text(
-                f"Ваш ответ сохранен!\n\n"
-                f"Опрос #{survey_id}\n"
-                f"Вопрос: {question[:100]}..."
-            )
-    else:
-        await update.message.reply_text(SURVEY_TEXTS['answer_error'])
-
-    # Очищаем данные
-    for key in ['current_survey_id', 'current_survey_question',
-                'current_survey_datetime', 'awaiting_survey_response',
-                'available_surveys', 'awaiting_survey_selection']:
-        context.user_data.pop(key, None)
-
-    return ConversationHandler.END
 
 
 async def handle_survey_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -329,109 +261,9 @@ async def create_survey_in_db(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     return ConversationHandler.END
 
-async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Команда для ответа на опрос (доступна всем)"""
-    user_id = context.user_data.get('user_id')
-    user_role = context.user_data.get('user_role')
-
-    # Опросы доступны всем авторизованным пользователям
-    if not user_role:
-        response_text = "Сначала авторизуйтесь с помощью /start"
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.edit_message_text(response_text)
-        else:
-            await update.message.reply_text(response_text)
-        return ConversationHandler.END
-
-    # Получаем активные опросы для этой роли или для всех
-    active_surveys_for_role = SurveyModel.get_surveys_for_role(user_role)
-    active_surveys_for_all = SurveyModel.get_surveys_for_role(None)
-    all_active_surveys = active_surveys_for_role + active_surveys_for_all
-
-    if not all_active_surveys:
-        response_text = SURVEY_TEXTS['no_active_surveys']
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.edit_message_text(response_text)
-        else:
-            await update.message.reply_text(response_text)
-        return
-
-    # Фильтруем опросы, на которые пользователь еще не отвечал
-    unanswered_surveys = []
-    for survey in all_active_surveys:
-        existing_response = ResponseModel.get_user_response(survey['id_survey'], user_id)
-        if not existing_response:
-            unanswered_surveys.append(survey)
-
-    if not unanswered_surveys:
-        response_text = SURVEY_TEXTS['all_surveys_answered']
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.edit_message_text(response_text)
-        else:
-            await update.message.reply_text(response_text)
-        return
-
-    context.user_data['available_surveys'] = unanswered_surveys
-    context.user_data['awaiting_survey_selection'] = True
-
-    # Формируем текст для отображения
-    if hasattr(update, 'callback_query') and update.callback_query:
-        # Для меню - показываем краткий список
-        response_text = SURVEY_TEXTS['available_surveys_title']
-        for i, survey in enumerate(unanswered_surveys[:5], 1):  # Ограничиваем 5 опросами для меню
-            target = survey['role'] if survey['role'] else "все пользователи"
-            response_text += (
-                f"{i}. Опрос #{survey['id_survey']}\n"
-                f"   Вопрос: {survey['question'][:50]}...\n\n"
-            )
-
-        if len(unanswered_surveys) > 5:
-            response_text += f"... и еще {len(unanswered_surveys) - 5} опросов\n\n"
-
-        response_text += SURVEY_TEXTS['select_survey_prompt']
-        await update.callback_query.edit_message_text(response_text)
-
-        # Сохраняем информацию о сообщении меню
-        context.user_data['menu_response_message_id'] = update.callback_query.message.message_id
-    else:
-        # Оригинальная логика для текстовых команд
-        context.user_data['available_surveys'] = unanswered_surveys
-        context.user_data['awaiting_survey_selection'] = True
-
-        chunks = []
-        current_chunk = SURVEY_TEXTS['available_surveys_title']
-
-        for i, survey in enumerate(unanswered_surveys, 1):
-            target = survey['role'] if survey['role'] else "все пользователи"
-            survey_text = (
-                f"{i}. Опрос #{survey['id_survey']}\n"
-                f"   Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-                f"   Вопрос: {survey['question'][:80]}...\n"
-                f"   Для: {target}\n\n"
-            )
-
-            if len(current_chunk) + len(survey_text) > 4000:
-                chunks.append(current_chunk)
-                current_chunk = f"Доступные опросы (продолжение):\n\n{survey_text}"
-            else:
-                current_chunk += survey_text
-
-        if current_chunk:
-            chunks.append(current_chunk + SURVEY_TEXTS['select_survey_prompt'])
-
-        if chunks:
-            await update.message.reply_text(chunks[0])
-            for chunk in chunks[1:]:
-                await asyncio.sleep(0.5)
-                await update.message.reply_text(chunk)
-        else:
-            await update.message.reply_text(SURVEY_TEXTS['no_active_surveys'])
-
-    return AWAITING_SURVEY_SELECTION
-
 
 async def handle_survey_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка выбора опроса"""
+    """Обработка выбора опроса (с учетом пагинации) - ввод номера сообщением"""
     selection_text = update.message.text.strip()
 
     try:
@@ -442,31 +274,48 @@ async def handle_survey_selection(update: Update, context: ContextTypes.DEFAULT_
         )
         return AWAITING_SURVEY_SELECTION
 
-    available_surveys = context.user_data.get('available_surveys', [])
+    # Получаем опросы из пагинации
+    pagination_data = context.user_data.get('pagination_surveys', {})
+    all_surveys = pagination_data.get('items', [])
 
-    if not 1 <= selection_num <= len(available_surveys):
+    if not all_surveys:
+        # Fallback: получаем опросы старым способом
+        user_id = context.user_data.get('user_id')
+        user_role = context.user_data.get('user_role')
+
+        active_surveys_for_role = SurveyModel.get_surveys_for_role(user_role)
+        active_surveys_for_all = SurveyModel.get_surveys_for_role(None)
+        all_surveys = active_surveys_for_role + active_surveys_for_all
+
+        # Фильтруем
+        filtered_surveys = []
+        for survey in all_surveys:
+            existing_response = ResponseModel.get_user_response(survey['id_survey'], user_id)
+            if not existing_response:
+                filtered_surveys.append(survey)
+
+        all_surveys = filtered_surveys
+
+    if not 1 <= selection_num <= len(all_surveys):
         await update.message.reply_text(
-            SURVEY_TEXTS['survey_out_of_range'].format(count=len(available_surveys))
+            SURVEY_TEXTS['survey_out_of_range'].format(count=len(all_surveys))
         )
         return AWAITING_SURVEY_SELECTION
 
-    selected_survey = available_surveys[selection_num - 1]
+    selected_survey = all_surveys[selection_num - 1]
 
     context.user_data['current_survey_id'] = selected_survey['id_survey']
     context.user_data['current_survey_question'] = selected_survey['question']
     context.user_data['current_survey_datetime'] = selected_survey['datetime']
     context.user_data['awaiting_survey_response'] = True
-
-    # Инициализируем пустой ответ для собирания по частям
     context.user_data['response_parts'] = []
 
-    context.user_data.pop('available_surveys', None)
-    context.user_data.pop('awaiting_survey_selection', None)
+    # Очищаем данные пагинации
+    context.user_data.pop('pagination_surveys', None)
 
     # Определяем, для кого опрос
     target = selected_survey['role'] if selected_survey['role'] else "все пользователи"
 
-    # ЧИСТЫЙ ТЕКСТ БЕЗ ЛИШНЕЙ ИНФОРМАЦИИ
     await update.message.reply_text(
         f"Опрос #{selected_survey['id_survey']}\n"
         f"Дата: {selected_survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
@@ -566,7 +415,8 @@ async def finish_response_command(update: Update, context: ContextTypes.DEFAULT_
     # Очищаем данные
     for key in ['current_survey_id', 'current_survey_question',
                 'current_survey_datetime', 'awaiting_survey_response',
-                'response_parts', 'available_surveys', 'awaiting_survey_selection']:
+                'response_parts', 'available_surveys', 'awaiting_survey_selection',
+                'pagination_surveys']:
         context.user_data.pop(key, None)
 
     return ConversationHandler.END
@@ -603,6 +453,123 @@ async def cancel_survey(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(SURVEY_TEXTS['survey_cancelled'])
 
     return ConversationHandler.END
+
+
+async def response_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Команда для ответа на опрос с пагинацией"""
+    user_id = context.user_data.get('user_id')
+    user_role = context.user_data.get('user_role')
+
+    if not user_role:
+        response_text = "Сначала авторизуйтесь с помощью /start"
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
+        return ConversationHandler.END
+
+    # Получаем активные опросы
+    active_surveys_for_role = SurveyModel.get_surveys_for_role(user_role)
+    active_surveys_for_all = SurveyModel.get_surveys_for_role(None)
+    all_active_surveys = active_surveys_for_role + active_surveys_for_all
+
+    if not all_active_surveys:
+        response_text = SURVEY_TEXTS['no_active_surveys']
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
+        return
+
+    # Фильтруем опросы, на которые пользователь еще не отвечал
+    unanswered_surveys = []
+    for survey in all_active_surveys:
+        existing_response = ResponseModel.get_user_response(survey['id_survey'], user_id)
+        if not existing_response:
+            unanswered_surveys.append(survey)
+
+    if not unanswered_surveys:
+        response_text = SURVEY_TEXTS['all_surveys_answered']
+        if hasattr(update, 'callback_query') and update.callback_query:
+            await update.callback_query.edit_message_text(response_text)
+        else:
+            await update.message.reply_text(response_text)
+        return
+
+    # Сохраняем опросы для пагинации
+    context.user_data['pagination_surveys'] = {
+        'items': unanswered_surveys,
+        'type': 'response'
+    }
+
+    # Всегда показываем пагинацию (независимо от вызова через меню или команду)
+    if hasattr(update, 'callback_query') and update.callback_query:
+        # Через меню - показываем первую страницу
+        await _show_response_page(query=update.callback_query, context=context, page=0)
+    else:
+        # Через текстовую команду - также показываем первую страницу
+        await _send_response_page(message_obj=update.message, context=context, page=0)
+
+    return AWAITING_SURVEY_SELECTION
+
+
+async def _show_response_page(query, context, page=0):
+    """Показать страницу с пагинацией (для меню)"""
+    user_data = context.user_data
+    items = user_data.get('pagination_surveys', {}).get('items', [])
+
+    if not items:
+        await query.edit_message_text("Нет доступных опросов.")
+        return
+
+    page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
+
+    # Форматируем сообщение
+    message = PaginationUtils.format_page_with_numbers(
+        page_items, current_page, total_pages, "📋 ДОСТУПНЫЕ ОПРОСЫ"
+    )
+
+    # Создаем клавиатуру навигации
+    keyboard = PaginationUtils.create_pagination_navigation(
+        page=current_page,
+        total_pages=total_pages,
+        callback_prefix=SURVEY_PAGINATION_PREFIX
+    )
+
+    await query.edit_message_text(
+        message,
+        reply_markup=keyboard
+    )
+
+
+async def _send_response_page(message_obj, context, page=0):
+    """Отправить страницу (для текстовой команды)"""
+    user_data = context.user_data
+    items = user_data.get('pagination_surveys', {}).get('items', [])
+
+    if not items:
+        await message_obj.reply_text("Нет доступных опросов.")
+        return
+
+    page_items, current_page, total_pages = PaginationUtils.get_page_items(items, page)
+
+    # Форматируем сообщение
+    message = PaginationUtils.format_page_with_numbers(
+        page_items, current_page, total_pages, "📋 ДОСТУПНЫЕ ОПРОСЫ"
+    )
+
+    # Создаем клавиатуру навигации
+    keyboard = PaginationUtils.create_pagination_navigation(
+        page=current_page,
+        total_pages=total_pages,
+        callback_prefix=SURVEY_PAGINATION_PREFIX
+    )
+
+    # Отправляем сообщение с клавиатурой
+    await message_obj.reply_text(
+        message,
+        reply_markup=keyboard
+    )
 
 
 survey_response_conversation = ConversationHandler(
