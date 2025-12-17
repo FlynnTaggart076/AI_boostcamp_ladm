@@ -469,6 +469,11 @@ def main():
         from tg_bot.handlers.survey_handlers import response_command
         return await response_command(update, context)
 
+    @role_required(['worker', 'CEO'])
+    async def addresponse_command_wrapper(update, context):
+        from tg_bot.handlers.addresponse_handlers import addresponse_command
+        return await addresponse_command(update, context)
+
     application.add_handler(CommandHandler("dailydigest", dailydigest_wrapper))
     application.add_handler(CommandHandler("weeklydigest", weeklydigest_wrapper))
     application.add_handler(CommandHandler("blockers", blockers_wrapper))

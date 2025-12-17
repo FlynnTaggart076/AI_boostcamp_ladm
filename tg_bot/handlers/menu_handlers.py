@@ -42,12 +42,25 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Создаем клавиатуру в зависимости от категории роли
     keyboard = []
 
+    # Команды, доступные ВСЕМ авторизованным пользователям
+    common_buttons = [
+        InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
+        InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse"),
+        InlineKeyboardButton("👤 Профиль", callback_data="menu_profile"),
+        InlineKeyboardButton("❓ Помощь", callback_data="menu_help"),
+        InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+    ]
+
     if role_category == 'CEO':
-        # Кнопки для руководителей
+        # Кнопки для руководителей (дополнительно к общим)
         keyboard = [
             [
                 InlineKeyboardButton("📊 Отчеты", callback_data="menu_reports"),
                 InlineKeyboardButton("📝 Опросы", callback_data="menu_surveys")
+            ],
+            [
+                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
             ],
             [
                 InlineKeyboardButton("🔄 Синхронизация", callback_data="menu_sync"),
@@ -58,8 +71,8 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
             ]
         ]
-    elif role_category == 'worker':
-        # Кнопки для работников
+    else:
+        # Кнопки для всех остальных пользователей (worker и другие)
         keyboard = [
             [
                 InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
@@ -73,9 +86,6 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
             ]
         ]
-    else:
-        await update.message.reply_text(AUTH_TEXTS['unknown_role'])
-        return
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -96,6 +106,11 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
+    # Проверяем, авторизован ли пользователь
+    if not user_role:
+        await query.edit_message_text("Сначала авторизуйтесь с помощью /start")
+        return
+
     # Маппинг callback_data на команды
     command_map = {
         'menu_profile': ('profile', []),
@@ -115,6 +130,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     elif callback_data == "menu_reports":
+        # Отчеты доступны только руководителям
         if role_category == 'CEO':
             await show_reports_menu(query)
         else:
@@ -122,6 +138,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     elif callback_data == "menu_surveys":
+        # Управление опросами доступно только руководителям
         if role_category == 'CEO':
             await show_surveys_menu(query)
         else:
@@ -132,18 +149,16 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await show_main_menu(query, role_category)
         return
 
-    # Проверка прав доступа для CEO команд
-    ceo_commands = ['syncjira', 'dailydigest', 'weeklydigest', 'blockers', 'sendsurvey', 'allsurveys']
+    ceo_only_commands = ['syncjira', 'dailydigest', 'weeklydigest', 'blockers', 'sendsurvey', 'allsurveys']
 
     if callback_data in command_map:
         command_name, args = command_map[callback_data]
 
-        # Проверка доступа для CEO команд
-        if command_name in ceo_commands and role_category != 'CEO':
+        # Проверка доступа для CEO-only команд
+        if command_name in ceo_only_commands and role_category != 'CEO':
             await query.edit_message_text(f"У вас нет доступа к команде {command_name}")
             return
 
-        # Выполняем команду
         await handle_menu_command(update, context, command_name, args)
     else:
         await query.edit_message_text(f"Неизвестная команда меню: {callback_data}")
@@ -245,6 +260,10 @@ async def show_main_menu(query, role_category):
                 InlineKeyboardButton("📝 Опросы", callback_data="menu_surveys")
             ],
             [
+                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+            ],
+            [
                 InlineKeyboardButton("🔄 Синхронизация", callback_data="menu_sync"),
                 InlineKeyboardButton("👤 Профиль", callback_data="menu_profile")
             ],
@@ -253,7 +272,8 @@ async def show_main_menu(query, role_category):
                 InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
             ]
         ]
-    elif role_category == 'worker':
+    else:
+        # Для всех остальных пользователей
         keyboard = [
             [
                 InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
@@ -267,8 +287,6 @@ async def show_main_menu(query, role_category):
                 InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
             ]
         ]
-    else:
-        return
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
