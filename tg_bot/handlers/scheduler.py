@@ -31,14 +31,14 @@ class SurveyScheduler:
         """Запуск планировщика"""
         logger.info("Запуск планировщика опросов и напоминаний...")
 
-        # Загружаем активные опросы из БД и планируем их
+        # Загружаем активные опросы из БД и планируем их отправку
         await self.schedule_existing_surveys()
 
         # Запускаем периодическую проверку новых опросов и напоминаний
         await asyncio.create_task(self.periodic_check())
 
     async def schedule_existing_surveys(self):
-        """Планирование существующих опросов из БД"""
+        """Планирование существующих опросов из БД - БЕЗ создания напоминаний"""
         surveys = SurveyModel.get_active_surveys()
 
         for survey in surveys:
@@ -49,11 +49,11 @@ class SurveyScheduler:
                 await self.schedule_survey(survey_id, survey_time)
                 logger.info(f"Опрос #{survey_id} запланирован на {survey_time}")
             else:
+                # Если время опроса уже прошло, просто отмечаем его как отправленный
+                # НЕ создаем напоминания для старых опросов!
                 if survey_id not in self.sent_surveys_cache:
-                    await self.send_survey_now(survey_id)
                     self.sent_surveys_cache.add(survey_id)
-                    # Создаем напоминания для неотвеченных пользователей
-                    await self.create_reminders_for_survey(survey_id)
+                    logger.info(f"Опрос #{survey_id} уже был отправлен ранее, время: {survey_time}")
 
     async def create_reminders_for_survey(self, survey_id: int):
         """Создание напоминаний для всех пользователей опроса"""
@@ -68,6 +68,16 @@ class SurveyScheduler:
             # Получаем пользователей для этого опроса
             users = await self.get_target_users(survey)
 
+            import pytz
+            from datetime import datetime
+
+            survey_time = survey['datetime']
+            # Приводим время опроса к UTC
+            if survey_time.tzinfo is None:
+                survey_time = pytz.UTC.localize(survey_time)
+            else:
+                survey_time = survey_time.astimezone(pytz.UTC)
+
             for user in users:
                 user_id = user['id_user']
 
@@ -76,19 +86,19 @@ class SurveyScheduler:
 
                 if not has_response:
                     # Создаем напоминания по расписанию
-                    survey_time = survey['datetime']
-
                     for stage, delta in self.reminder_stages.items():
                         reminder_time = survey_time + delta
 
                         # Создаем напоминание только если время еще не прошло
-                        if reminder_time > datetime.now():
+                        if reminder_time > datetime.now(pytz.UTC):
                             ReminderModel.create_reminder(
                                 survey_id=survey_id,
                                 user_id=user_id,
                                 reminder_stage=stage,
                                 next_reminder_time=reminder_time
                             )
+                        else:
+                            logger.info(f"Время напоминания уже прошло для этапа {stage}")
 
             logger.info(f"Напоминания созданы для опроса #{survey_id}")
 
@@ -99,6 +109,7 @@ class SurveyScheduler:
         """Проверка и отправка напоминаний"""
         try:
             logger.info("🔍 Проверяю напоминания...")
+            ReminderModel.debug_reminder_times()
 
             # Получаем все готовые к отправке напоминания
             pending_reminders = ReminderModel.get_pending_reminders()
@@ -146,9 +157,8 @@ class SurveyScheduler:
 
             # Форматируем сообщение с учетом этапа напоминания
             stage_texts = {
-                1: "Напоминаем об опросе, отправленном час назад",
+                1: "Напоминаем об опросе, отправленном недавно",
                 2: "Второе напоминание об опросе",
-                3: "Последнее напоминание об опросе"
             }
 
             stage_text = stage_texts.get(stage, "Напоминание об опросе")
@@ -187,6 +197,7 @@ class SurveyScheduler:
                 self.send_survey_delayed(survey_id, delay)
             )
             self.scheduled_tasks[survey_id] = task
+            logger.info(f"Опрос #{survey_id} запланирован через {delay} секунд")
             return True
         else:
             # Время уже наступило, отправляем немедленно
@@ -212,7 +223,7 @@ class SurveyScheduler:
             logger.error(f"Ошибка отправки опроса #{survey_id}: {e}")
 
     async def send_survey_now(self, survey_id: int):
-        """Немедленная отправка опроса пользователям"""
+        """Немедленная отправка опроса пользователям - ТОЛЬКО ЗДЕСЬ создаем напоминания"""
         try:
             # Получаем данные опроса
             surveys = SurveyModel.get_active_surveys()
@@ -243,7 +254,7 @@ class SurveyScheduler:
             # Помечаем опрос как отправленный в кэше
             self.sent_surveys_cache.add(survey_id)
 
-            # Создаем напоминания для неотвеченных пользователей
+            # СОЗДАЕМ НАПОМИНАНИЯ ТОЛЬКО ЗДЕСЬ - при отправке нового опроса!
             await self.create_reminders_for_survey(survey_id)
 
             logger.info(f"✅ Опрос #{survey_id} отправлен {sent_count} пользователям и созданы напоминания")
@@ -316,7 +327,7 @@ class SurveyScheduler:
         """Периодическая проверка новых опросов и напоминаний"""
         while True:
             try:
-                # Проверяем каждые 30 секунд (как в первом файле, а не 60)
+                # Проверяем каждые 30 секунд
                 await asyncio.sleep(30)
 
                 # 1. Проверяем новые опросы
@@ -330,12 +341,13 @@ class SurveyScheduler:
                             self.scheduled_tasks[survey_id].cancel()
                             del self.scheduled_tasks[survey_id]
 
-                # Добавляем новые опросы
+                # Добавляем новые опросы (те, которые были созданы через sendsurvey)
                 for survey in surveys:
                     survey_id = survey['id_survey']
                     survey_time = survey['datetime']
 
-                    if survey_id not in self.scheduled_tasks and survey_time > datetime.now():
+                    # Если опрос еще не в планировщике и время в будущем
+                    if survey_id not in self.scheduled_tasks and survey_id not in self.sent_surveys_cache and survey_time > datetime.now():
                         await self.schedule_survey(survey_id, survey_time)
 
                 # 2. Проверяем и отправляем напоминания
@@ -345,7 +357,7 @@ class SurveyScheduler:
                 logger.error(f"❌ Ошибка в periodic_check: {e}")
 
     async def add_new_survey(self, survey_id: int, send_time: datetime):
-        """Добавление нового опроса в планировщик"""
+        """Добавление нового опроса в планировщик - вызывается при создании опроса через sendsurvey"""
         now = datetime.now()
 
         # Если время уже прошло, отправляем немедленно

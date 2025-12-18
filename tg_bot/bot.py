@@ -267,7 +267,7 @@ async def syncjira_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             from tg_bot.services.jira_loader import jira_loader
 
-            # Синхронные операции в отдельном потоке
+            # Синхронные операци в отдельном потоке
             jira_loader.clear_old_data()
             success = jira_loader.load_all_data()
 
@@ -350,7 +350,7 @@ def role_required(allowed_categories):
 
 def main():
     """Основная функция запуска бота"""
-    # Создаем application с явным удалением webhook
+    # Создаем application без JobQueue
     application = Application.builder().token(config.BOT_TOKEN).build()
     logger.info("Запуск бота...")
 
@@ -402,7 +402,7 @@ def main():
     from tg_bot.handlers.survey_handlers import survey_response_conversation, survey_creation_conversation
     from tg_bot.handlers.role_handlers import setup_role_handlers
     from tg_bot.handlers.survey_target_handlers import setup_survey_target_handlers
-    from tg_bot.handlers.report_handlers import setup_report_handlers, report_command  # ДОБАВЛЕНО
+    from tg_bot.handlers.report_handlers import setup_report_handlers, report_command
 
     # Создаем ConversationHandler для регистрации
     from tg_bot.config.constants import AWAITING_SUBROLE
@@ -439,7 +439,7 @@ def main():
     setup_survey_target_handlers(application)
 
     # Настраиваем обработчики отчетов
-    setup_report_handlers(application)  # ДОБАВЛЕНО
+    setup_report_handlers(application)
 
     # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ (порядок важен!)
     application.add_handler(registration_handler)
@@ -471,13 +471,20 @@ def main():
     application.add_handler(CommandHandler("addresponse", addresponse_command_wrapper))
     application.add_handler(CommandHandler("done", finish_response_command))
 
+    # Обработчик для команды /report (вместо устаревших /dailydigest, /weeklydigest, /blockers)
+    application.add_handler(CommandHandler("report", report_command))
+
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик неизвестных команд"""
         command = update.message.text.split()[0] if update.message.text else ""
 
+        # РЕДИРЕКТ устаревших команд на /report
         if command in ['/dailydigest', '/weeklydigest', '/blockers']:
+            await update.message.reply_text(
+                f"Команда {command} устарела. Используйте /report для получения отчетов."
+            )
             return await report_command(update, context)
 
         await update.message.reply_text(
@@ -486,7 +493,19 @@ def main():
 
     application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 
-    # Запускаем бота с более агрессивными параметрами для очистки webhook
+    # ЗАПУСКАЕМ ПЛАНИРОВЩИК - ВАЖНО: используем асинхронный запуск без JobQueue
+    # Эта логика работает и включает повторную отправку сообщений спустя время
+    async def start_scheduler_on_boot():
+        await survey_scheduler.start()
+        logger.info("Планировщик опросов запущен (включая логику повторной отправки)")
+
+    async def on_startup(app):
+        asyncio.create_task(start_scheduler_on_boot())
+
+    # Привязываем обработчик запуска
+    application.post_init = on_startup
+
+    # Запускаем бота
     logger.info("Бот готов к работе")
 
     application.run_polling(
