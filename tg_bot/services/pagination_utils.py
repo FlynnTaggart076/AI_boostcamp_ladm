@@ -57,7 +57,7 @@ class PaginationUtils:
 
         # Номер текущей страницы
         nav_buttons.append(
-            InlineKeyboardButton(f"📄 {page + 1}/{total_pages}", callback_data=f"{callback_prefix}info")
+            InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data=f"{callback_prefix}info")
         )
 
         # Кнопка "Вперед" - только если не на последней странице
@@ -106,15 +106,15 @@ class PaginationUtils:
                     answer_preview = item['user_answer'][:50] + "..." if item['user_answer'] and len(
                         item['user_answer']) > 50 else item['user_answer'] or "(пустой ответ)"
                     message += f"{item_num}. Опрос #{item.get('id_survey', '?')}\n"
-                    message += f"   📅 {date_str}\n"
-                    message += f"   ❓ {question_preview}\n"
-                    message += f"   📝 Ответ: {answer_preview}\n\n"
+                    message += f"   {date_str}\n"
+                    message += f"   {question_preview}\n"
+                    message += f"   Ответ: {answer_preview}\n\n"
                 else:
                     # Для доступных опросов
                     message += f"{item_num}. Опрос #{item.get('id_survey', '?')}\n"
-                    message += f"   📅 {date_str}\n"
-                    message += f"   ❓ {question_preview}\n"
-                    message += f"   👥 Для: {target}\n\n"
+                    message += f"   {date_str}\n"
+                    message += f"   {question_preview}\n"
+                    message += f"   Для: {target}\n\n"
             else:
                 # Для всех опросов (админский просмотр)
                 target = item.get('role', 'все') if item.get('role') else 'все'
@@ -124,13 +124,13 @@ class PaginationUtils:
                                                                                   'strftime') else str(item['datetime'])
 
                 message += f"{item_num}. ID: {item.get('id_survey', '?')}\n"
-                message += f"   ❓ Вопрос: {question_preview}\n"
-                message += f"   👥 Для: {target}\n"
-                message += f"   📅 Время: {date_str}\n"
-                message += f"   📊 Статус: {item.get('state', '?')}\n\n"
+                message += f"   Вопрос: {question_preview}\n"
+                message += f"   Для: {target}\n"
+                message += f"   Время: {date_str}\n"
+                message += f"   Статус: {item.get('state', '?')}\n\n"
 
-        message += f"📄 Страница {page + 1} из {total_pages}\n"
-        message += f"📋 Всего элементов: {len(items)}\n"
+        message += f"Страница {page + 1} из {total_pages}\n"
+        message += f"Всего элементов: {len(items)}\n"
 
         # Добавляем подсказку для выбора только если это нужно (для response и addresponse)
         if 'user_answer' not in items[0] if items else False and 'state' not in items[0] if items else False:
@@ -165,7 +165,7 @@ class PaginationUtils:
         if page > 0:
             nav_buttons.append(InlineKeyboardButton("⬅️ Назад", callback_data=f"{callback_prefix}{page - 1}"))
 
-        nav_buttons.append(InlineKeyboardButton(f"📄 {page + 1}/{total_pages}", callback_data=f"{callback_prefix}info"))
+        nav_buttons.append(InlineKeyboardButton(f"{page + 1}/{total_pages}", callback_data=f"{callback_prefix}info"))
 
         if page < total_pages - 1:
             nav_buttons.append(InlineKeyboardButton("➡️ Вперед", callback_data=f"{callback_prefix}{page + 1}"))

@@ -24,17 +24,17 @@ async def handle_pagination_callback(update: Update, context: ContextTypes.DEFAU
     if callback_data.startswith(SURVEY_PAGINATION_PREFIX):
         await _handle_pagination_navigation(
             query, context, callback_data, SURVEY_PAGINATION_PREFIX,
-            'pagination_surveys', "📋 ДОСТУПНЫЕ ОПРОСЫ"
+            'pagination_surveys', "ДОСТУПНЫЕ ОПРОСЫ"
         )
     elif callback_data.startswith(ADD_RESPONSE_PAGINATION_PREFIX):
         await _handle_pagination_navigation(
             query, context, callback_data, ADD_RESPONSE_PAGINATION_PREFIX,
-            'pagination_addresponse', "📝 ОТВЕЧЕННЫЕ ОПРОСЫ"
+            'pagination_addresponse', "ОТВЕЧЕННЫЕ ОПРОСЫ"
         )
     elif callback_data.startswith(ALLSURVEYS_PAGINATION_PREFIX):
         await _handle_pagination_navigation(
             query, context, callback_data, ALLSURVEYS_PAGINATION_PREFIX,
-            'pagination_allsurveys', "📊 ВСЕ АКТИВНЫЕ ОПРОСЫ"
+            'pagination_allsurveys', "ВСЕ АКТИВНЫЕ ОПРОСЫ"
         )
     else:
         logger.warning(f"Неизвестный callback_data пагинации: {callback_data}")

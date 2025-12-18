@@ -92,11 +92,11 @@ class ReminderModel:
             cursor.execute(query)
             reminders = cursor.fetchall()
 
-            logger.info(f"📊 Основной запрос вернул {len(reminders)} напоминаний для отправки")
+            logger.info(f"Основной запрос вернул {len(reminders)} напоминаний для отправки")
 
             if reminders:
                 for reminder in reminders[:3]:  # Первые 3 для логов
-                    logger.info(f"✅ НАЙДЕНО: ID={reminder['id']}, Survey=#{reminder['survey_id']}")
+                    logger.info(f"НАЙДЕНО: ID={reminder['id']}, Survey=#{reminder['survey_id']}")
                     logger.info(f"   Время напоминания: {reminder['raw_time']}")
                     logger.info(f"   Время БД (скорректированное): {reminder['db_now_adjusted']}")
                     logger.info(f"   Просрочено на: {reminder['seconds_late']:.0f} сек")
@@ -104,7 +104,7 @@ class ReminderModel:
 
             return [dict(reminder) for reminder in reminders]
         except Exception as e:
-            logger.error(f"❌ Ошибка получения напоминаний: {e}")
+            logger.error(f"Ошибка получения напоминаний: {e}")
             return []
         finally:
             cursor.close()
@@ -123,7 +123,7 @@ class ReminderModel:
             ReminderModel._check_all_pending_with_details()
 
         except Exception as e:
-            logger.error(f"❌ Ошибка диагностики: {e}")
+            logger.error(f"Ошибка диагностики: {e}")
 
     @staticmethod
     def _check_time_difference():
@@ -145,7 +145,7 @@ class ReminderModel:
             """)
             time_info = cursor.fetchone()
 
-            logger.info("🕐 ВРЕМЯ:")
+            logger.info("ВРЕМЯ:")
             logger.info(f"   БД NOW(): {time_info['db_now']}")
             logger.info(f"   БД CURRENT_TIMESTAMP: {time_info['current_ts']}")
             logger.info(f"   БД LOCALTIMESTAMP: {time_info['local_ts']}")
@@ -195,10 +195,10 @@ class ReminderModel:
             cursor.execute(query)
             reminders = cursor.fetchall()
 
-            logger.info("📋 PENDING НАПОМИНАНИЯ (первые 20):")
+            logger.info("PENDING НАПОМИНАНИЯ (первые 20):")
 
             for i, reminder in enumerate(reminders):
-                status = "✅ ПРОШЛО" if reminder['is_past'] else "⏳ БУДУЩЕЕ"
+                status = "ПРОШЛО" if reminder['is_past'] else "⏳ БУДУЩЕЕ"
                 logger.info(
                     f"{i + 1}. ID={reminder['id']}, Survey=#{reminder['survey_id']}, Stage={reminder['reminder_stage']}")
                 logger.info(f"   Время: {reminder['next_reminder_time']} ({status})")
@@ -207,7 +207,7 @@ class ReminderModel:
                 logger.info(f"   TG ID: {reminder['tg_id']} (есть: {reminder['has_tg']})")
 
                 if reminder['is_past'] and reminder['is_active'] and reminder['has_tg']:
-                    logger.info(f"   ❗ ЭТО НАПОМИНАНИЕ ДОЛЖНО БЫТЬ ОТПРАВЛЕНО!")
+                    logger.info(f"   ЭТО НАПОМИНАНИЕ ДОЛЖНО БЫТЬ ОТПРАВЛЕНО!")
 
             cursor.close()
             connection.close()
@@ -232,10 +232,10 @@ class ReminderModel:
             cursor = connection.cursor()
             cursor.execute(query, (reminder_id,))
             connection.commit()
-            logger.info(f"✅ Напоминание #{reminder_id} помечено как отправленное")
+            logger.info(f"Напоминание #{reminder_id} помечено как отправленное")
             return True
         except Exception as e:
-            logger.error(f"❌ Ошибка обновления напоминания #{reminder_id}: {e}")
+            logger.error(f"Ошибка обновления напоминания #{reminder_id}: {e}")
             connection.rollback()
             return False
         finally:
@@ -259,10 +259,10 @@ class ReminderModel:
             cursor.execute(query, (survey_id, user_id))
             result = cursor.fetchone() is not None
             if result:
-                logger.info(f"✅ Пользователь #{user_id} уже ответил на опрос #{survey_id}")
+                logger.info(f"Пользователь #{user_id} уже ответил на опрос #{survey_id}")
             return result
         except Exception as e:
-            logger.error(f"❌ Ошибка проверки ответа: {e}")
+            logger.error(f"Ошибка проверки ответа: {e}")
             return False
         finally:
             cursor.close()
@@ -287,10 +287,10 @@ class ReminderModel:
             connection.commit()
             rows_affected = cursor.rowcount
             logger.info(
-                f"✅ Напоминания отменены: опрос #{survey_id}, пользователь #{user_id}, отменено {rows_affected} напоминаний")
+                f"Напоминания отменены: опрос #{survey_id}, пользователь #{user_id}, отменено {rows_affected} напоминаний")
             return True
         except Exception as e:
-            logger.error(f"❌ Ошибка отмены напоминаний: {e}")
+            logger.error(f"Ошибка отмены напоминаний: {e}")
             connection.rollback()
             return False
         finally:
@@ -323,16 +323,16 @@ class ReminderModel:
             cursor.execute(query)
             near_reminders = cursor.fetchall()
 
-            logger.info("⏰ БЛИЖАЙШИЕ НАПОМИНАНИЯ (±1 час):")
+            logger.info("БЛИЖАЙШИЕ НАПОМИНАНИЯ (±1 час):")
 
             for reminder in near_reminders:
                 diff = reminder['diff_seconds']
                 if diff > 0:
-                    status = f"❌ ПРОСРОЧЕНО на {diff:.0f} сек"
+                    status = f"ПРОСРОЧЕНО на {diff:.0f} сек"
                 elif diff < 0:
-                    status = f"⏳ ЧЕРЕЗ {-diff:.0f} сек"
+                    status = f"ЧЕРЕЗ {-diff:.0f} сек"
                 else:
-                    status = "✅ СЕЙЧАС"
+                    status = "СЕЙЧАС"
 
                 logger.info(f"ID={reminder['id']}: {reminder['next_reminder_time']}")
                 logger.info(f"   {status}")
@@ -343,4 +343,4 @@ class ReminderModel:
             connection.close()
 
         except Exception as e:
-            logger.error(f"❌ Ошибка исправления часовых поясов: {e}")
+            logger.error(f"Ошибка исправления часовых поясов: {e}")

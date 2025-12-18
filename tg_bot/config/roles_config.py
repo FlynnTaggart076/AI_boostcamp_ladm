@@ -1,6 +1,5 @@
-from tg_bot.config.constants import VALID_ROLES  # Импортируем для consistency
+from tg_bot.config.constants import VALID_ROLES
 
-# Подвиды работников (worker)
 WORKER_SUBTYPES = {
     'worker': {
         'display_name': 'Worker',
@@ -20,12 +19,12 @@ WORKER_SUBTYPES = {
 }
 
 CEO_SUBTYPES = {
-    'CEO': {  # Всегда заглавными
+    'CEO': {
         'display_name': 'CEO',
         'description': 'Head of department',
         'permissions': ['create_surveys', 'view_reports', 'manage_users']
     },
-    'team_lead': {  # строчными
+    'team_lead': {
         'display_name': 'Team Lead',
         'description': 'Team leader',
         'permissions': ['create_surveys', 'view_reports', 'manage_team', 'assign_tasks']
@@ -70,42 +69,11 @@ def get_role_category(role_type):
         return None
 
 
-def is_role_in_category(role_type, category):
-    """Проверить, принадлежит ли роль категории"""
-    role_cat = get_role_category(role_type)
-    return role_cat == category
-
-def get_role_description(role_type):
-    """Получить описание роли"""
-    role = ALL_ROLES.get(role_type)
-    return role['description'] if role else 'No description available'
-
-def get_role_permissions(role_type):
-    """Получить разрешения роли"""
-    role = ALL_ROLES.get(role_type)
-    return role.get('permissions', []) if role else []
-
-def get_available_roles():
-    """Получить список всех доступных ролей"""
-    return list(ALL_ROLES.keys())
-
 def get_worker_subtypes():
     """Получить все подвиды работников"""
     return list(WORKER_SUBTYPES.keys())
 
+
 def get_ceo_subtypes():
     """Получить все подвиды руководителей"""
     return list(CEO_SUBTYPES.keys())
-
-def is_valid_role(role_type):
-    """Проверить, является ли роль валидной"""
-    return role_type in VALID_ROLES  # Используем константы для consistency
-
-def get_roles_by_category(category):
-    """Получить все роли категории"""
-    if category == 'worker':
-        return list(WORKER_SUBTYPES.keys())
-    elif category == 'CEO':
-        return list(CEO_SUBTYPES.keys())
-    else:
-        return []

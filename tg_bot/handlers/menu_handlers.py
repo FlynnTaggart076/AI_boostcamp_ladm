@@ -64,7 +64,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "📱 **Главное меню**\n\n"
+        "Главное меню\n\n"
         "Выберите действие:",
         reply_markup=reply_markup,
         parse_mode='Markdown'
@@ -276,14 +276,14 @@ async def show_main_menu(query, role_category):
                 InlineKeyboardButton("Помощь", callback_data="menu_help")
             ],
             [
-                InlineKeyboardButton("✖Закрыть", callback_data="menu_close")
+                InlineKeyboardButton("Закрыть", callback_data="menu_close")
             ]
         ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        "📱 **Главное меню**\n\n"
+        "Главное меню\n\n"
         "Выберите действие:",
         reply_markup=reply_markup,
         parse_mode='Markdown'

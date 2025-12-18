@@ -10,9 +10,6 @@ logger = logging.getLogger(__name__)
 class UserModel:
     """Модель пользователей - УПРОЩЕННАЯ версия"""
 
-    # TODO: Добавить методы для Jira таблиц (проекты, задачи, спринты, доски)
-    # при запуске бота, но они не используются в работе бота
-
     @staticmethod
     def get_user_by_telegram_username(telegram_username):
         """Получение пользователя по tg_username - ИСПОЛЬЗУЕТСЯ"""
@@ -116,7 +113,7 @@ class UserModel:
             cursor.execute(query, (name, telegram_username, tg_id, role, jira_name, jira_email))
             user_id = cursor.fetchone()[0]
             connection.commit()
-            logger.info(f"✅ Пользователь зарегистрирован: {name} (Telegram: @{telegram_username})")
+            logger.info(f"Пользователь зарегистрирован: {name} (Telegram: @{telegram_username})")
             return True
         except Exception as e:
             logger.error(f"Ошибка регистрации пользователя: {e}")
@@ -152,7 +149,7 @@ class UserModel:
             connection.commit()
 
             if result:
-                logger.info(f"✅ Пользователь Jira обновлен: ID {user_id}, имя: {name}")
+                logger.info(f"Пользователь Jira обновлен: ID {user_id}, имя: {name}")
                 return True
             else:
                 cursor.execute("SELECT tg_username FROM users WHERE id_user = %s", (user_id,))
@@ -324,7 +321,7 @@ class UserModel:
                 ))
                 result = cursor.fetchone()
                 user_id = result[0] if result else next_id
-                logger.debug(f"✅ Jira user created with ID {user_id}: {jira_name or jira_email}")
+                logger.debug(f"Jira user created with ID {user_id}: {jira_name or jira_email}")
 
             connection.commit()
             return user_id
@@ -366,7 +363,7 @@ class SurveyModel:
             ))
             survey_id = cursor.fetchone()[0]
             connection.commit()
-            logger.info(f"✅ Опрос создан с ID: {survey_id}")
+            logger.info(f"Опрос создан с ID: {survey_id}")
             return survey_id
         except Exception as e:
             logger.error(f"Ошибка создания опроса: {e}")
@@ -394,38 +391,6 @@ class SurveyModel:
             return [dict(survey) for survey in surveys]
         except Exception as e:
             logger.error(f"Ошибка получения опросов: {e}")
-            return []
-        finally:
-            cursor.close()
-            connection.close()
-
-    @staticmethod
-    def get_surveys_for_role(role):
-        """Получение опросов для определенной роли - ИСПОЛЬЗУЕТСЯ"""
-        if role is None:
-            query = '''
-            SELECT * FROM surveys 
-            WHERE role IS NULL AND state = 'active'
-            ORDER BY datetime DESC;
-            '''
-            params = ()
-        else:
-            query = '''
-            SELECT * FROM surveys 
-            WHERE role = %s AND state = 'active'
-            ORDER BY datetime DESC;
-            '''
-            params = (role,)
-        connection = db_connection.get_connection()
-        if not connection:
-            return []
-        try:
-            cursor = connection.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query, params)
-            surveys = cursor.fetchall()
-            return [dict(survey) for survey in surveys]
-        except Exception as e:
-            logger.error(f"Ошибка получения опросов по роли: {e}")
             return []
         finally:
             cursor.close()
@@ -538,7 +503,7 @@ class ResponseModel:
             connection.commit()
 
             if response_id:
-                logger.info(f"✅ Ответ сохранен: ID {response_id} для опроса #{id_survey}")
+                logger.info(f"Ответ сохранен: ID {response_id} для опроса #{id_survey}")
             else:
                 logger.warning(f"Ответ не сохранен для опроса #{id_survey}")
 

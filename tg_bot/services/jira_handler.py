@@ -24,12 +24,12 @@ def fetch_jira_user_data(user_id: int, jira_account: str, user_name: str):
         jira_user_info = jira_integration.find_user_by_display_name(jira_account)
 
         if not jira_user_info:
-            print("⚠️  Пользователь не найден в Jira")
+            print("Пользователь не найден в Jira")
             print("Это нормально, если пользователь ввел неверный аккаунт")
             print("или если данные Jira еще не загружены в систему")
             return True  # Все равно возвращаем True, регистрация продолжается
 
-        print(f"✅ Пользователь найден в Jira:")
+        print(f"Пользователь найден в Jira:")
         print(f"   Account ID: {jira_user_info['account_id']}")
         print(f"   Display Name: {jira_user_info['display_name']}")
         print(f"   Email: {jira_user_info['email_address']}")
@@ -37,7 +37,7 @@ def fetch_jira_user_data(user_id: int, jira_account: str, user_name: str):
         return True
 
     except Exception as e:
-        print(f"\n⚠️  Ошибка при проверке Jira: {e}")
+        print(f"\nОшибка при проверке Jira: {e}")
         print("Регистрация продолжается без данных Jira")
         return True  # Все равно продолжаем регистрацию
 

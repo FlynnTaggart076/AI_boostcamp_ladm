@@ -72,7 +72,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             row = []
 
     # Кнопка "Назад" для возврата к выбору категории
-    keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data=f"{CATEGORY_SELECTION_PREFIX}back")])
+    keyboard.append([InlineKeyboardButton("Назад", callback_data=f"{CATEGORY_SELECTION_PREFIX}back")])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -101,7 +101,7 @@ async def handle_subtype_selection(update: Update, context: ContextTypes.DEFAULT
 
     # Проверяем, что роль валидна
     if selected_role not in ALL_ROLES:
-        await query.edit_message_text(f"❌ Ошибка: недопустимая роль '{selected_role}'")
+        await query.edit_message_text(f"Ошибка: недопустимая роль '{selected_role}'")
         return AWAITING_SUBROLE
 
     # Сохраняем выбранную роль

@@ -28,12 +28,10 @@ async def handle_add_response_selection(update: Update, context: ContextTypes.DE
         )
         return AWAITING_ADD_RESPONSE_SELECTION
 
-    # Получаем опросы из пагинации
     pagination_data = context.user_data.get('pagination_addresponse', {})
     all_surveys = pagination_data.get('items', [])
 
     if not all_surveys:
-        # Fallback: получаем опросы из user_data
         all_surveys = context.user_data.get('available_surveys_add', [])
 
     if not 1 <= selection_num <= len(all_surveys):
@@ -44,7 +42,6 @@ async def handle_add_response_selection(update: Update, context: ContextTypes.DE
 
     selected_survey = all_surveys[selection_num - 1]
 
-    # Сохраняем данные выбранного опроса
     context.user_data['current_add_survey_id'] = selected_survey['id_survey']
     context.user_data['current_add_survey_question'] = selected_survey['question']
     context.user_data['current_add_survey_datetime'] = selected_survey['datetime']
@@ -53,7 +50,6 @@ async def handle_add_response_selection(update: Update, context: ContextTypes.DE
     context.user_data['awaiting_add_response_part'] = True
     context.user_data['add_response_parts'] = []
 
-    # Очищаем данные пагинации
     context.user_data.pop('pagination_addresponse', None)
     context.user_data.pop('available_surveys_add', None)
     context.user_data.pop('awaiting_add_response_selection', None)

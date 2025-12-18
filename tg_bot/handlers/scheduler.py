@@ -25,19 +25,19 @@ class SurveyScheduler:
 
     async def start(self):
         """Запуск планировщика"""
-        logger.info("🚀 Запуск планировщика опросов и напоминаний...")
+        logger.info("Запуск планировщика опросов и напоминаний...")
 
         # Загружаем активные опросы из БД и планируем их отправку
         await self.schedule_existing_surveys()
 
         # Запускаем периодическую проверку новых опросов и напоминаний
-        asyncio.create_task(self.periodic_check())
+        await asyncio.create_task(self.periodic_check())
 
     async def schedule_existing_surveys(self):
         """Планирование существующих опросов из БД - ПРИОРИТЕТ ПО СТАТУСУ"""
         surveys = SurveyModel.get_active_surveys()
 
-        logger.info(f"📋 Загружено {len(surveys)} активных опросов из БД")
+        logger.info(f"Загружено {len(surveys)} активных опросов из БД")
 
         for survey in surveys:
             survey_id = survey['id_survey']
@@ -50,7 +50,7 @@ class SurveyScheduler:
                 # Есть отправленные напоминания - опрос уже отправлен
                 if survey_id not in self.sent_surveys_cache:
                     self.sent_surveys_cache.add(survey_id)
-                    logger.info(f"✅ Опрос #{survey_id} уже был отправлен (есть sent напоминания)")
+                    logger.info(f"Опрос #{survey_id} уже был отправлен (есть sent напоминания)")
                 continue
 
             # 2. Проверяем, есть ли pending напоминания
@@ -59,10 +59,10 @@ class SurveyScheduler:
             if has_pending_reminders:
                 # Есть pending напоминания - НУЖНО ОТПРАВИТЬ!
                 if survey_time > datetime.now():
-                    logger.info(f"🚨 ОПРОС #{survey_id}: ЕСТЬ PENDING НАПОМИНАНИЯ, время еще не наступило")
+                    logger.info(f"ОПРОС #{survey_id}: ЕСТЬ PENDING НАПОМИНАНИЯ, время еще не наступило")
                     # Планируем проверку времени (напоминания сами отправятся когда время придет)
                 else:
-                    logger.info(f"🚨 ОПРОС #{survey_id}: ЕСТЬ PENDING НАПОМИНАНИЯ, время УЖЕ прошло!")
+                    logger.info(f"ОПРОС #{survey_id}: ЕСТЬ PENDING НАПОМИНАНИЯ, время УЖЕ прошло!")
                     logger.info(f"   Напоминания будут отправлены при следующей проверке планировщиком")
                 continue
 
@@ -70,10 +70,10 @@ class SurveyScheduler:
             if survey_time > datetime.now():
                 # Время еще не наступило - планируем
                 await self.schedule_survey(survey_id, survey_time)
-                logger.info(f"📅 Опрос #{survey_id} запланирован на {survey_time}")
+                logger.info(f"Опрос #{survey_id} запланирован на {survey_time}")
             else:
                 # Время уже прошло - отправляем СРАЗУ
-                logger.info(f"🚀 Опрос #{survey_id} время прошло, отправляю СЕЙЧАС...")
+                logger.info(f"Опрос #{survey_id} время прошло, отправляю СЕЙЧАС...")
                 await self.send_survey_now(survey_id, survey_time)
 
     async def _check_if_survey_was_sent(self, survey_id: int) -> bool:
@@ -95,7 +95,7 @@ class SurveyScheduler:
             return count > 0
 
         except Exception as e:
-            logger.error(f"❌ Ошибка проверки отправленных напоминаний для опроса #{survey_id}: {e}")
+            logger.error(f"Ошибка проверки отправленных напоминаний для опроса #{survey_id}: {e}")
             return False
 
     async def _check_if_survey_has_pending_reminders(self, survey_id: int) -> bool:
@@ -117,7 +117,7 @@ class SurveyScheduler:
             return count > 0
 
         except Exception as e:
-            logger.error(f"❌ Ошибка проверки pending напоминаний для опроса #{survey_id}: {e}")
+            logger.error(f"Ошибка проверки pending напоминаний для опроса #{survey_id}: {e}")
             return False
 
     async def create_reminders_for_survey(self, survey_id: int, survey_time: datetime):
@@ -130,7 +130,7 @@ class SurveyScheduler:
             survey = next((s for s in surveys if s['id_survey'] == survey_id), None)
 
             if not survey:
-                logger.error(f"❌ Опрос #{survey_id} не найден")
+                logger.error(f"Опрос #{survey_id} не найден")
                 return
 
             # Получаем пользователей для этого опроса
@@ -145,7 +145,7 @@ class SurveyScheduler:
             else:
                 survey_time_utc = survey_time.astimezone(timezone.utc)
 
-            logger.info(f"📝 Создаем напоминания для опроса #{survey_id}")
+            logger.info(f" Создаем напоминания для опроса #{survey_id}")
             logger.info(f"   Время опроса (local): {survey_time}")
             logger.info(f"   Время опроса (UTC): {survey_time_utc}")
 
@@ -181,12 +181,12 @@ class SurveyScheduler:
                             reminders_created += 1
                             logger.debug(f"   Создано напоминание этап {stage} на {reminder_time}")
 
-            logger.info(f"✅ Создано {reminders_created} напоминаний для опроса #{survey_id}")
+            logger.info(f"Создано {reminders_created} напоминаний для опроса #{survey_id}")
             if users_without_tg > 0:
-                logger.warning(f"⚠️  Пропущено {users_without_tg} пользователей без TG ID")
+                logger.warning(f"Пропущено {users_without_tg} пользователей без TG ID")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка создания напоминаний для опроса #{survey_id}: {e}")
+            logger.error(f"Ошибка создания напоминаний для опроса #{survey_id}: {e}")
             import traceback
             logger.error(traceback.format_exc())
 
@@ -197,7 +197,7 @@ class SurveyScheduler:
 
             # Получаем все готовые к отправке напоминания
             pending_reminders = ReminderModel.get_pending_reminders()
-            logger.info(f"📊 Найдено {len(pending_reminders)} напоминаний для отправки")
+            logger.info(f"Найдено {len(pending_reminders)} напоминаний для отправки")
 
             sent_count = 0
             skipped_count = 0
@@ -210,13 +210,13 @@ class SurveyScheduler:
                 stage = reminder['reminder_stage']
 
                 logger.info(
-                    f"📨 Обрабатываю напоминание #{reminder_id} для пользователя {tg_id} (опрос #{survey_id}, этап {stage})")
+                    f"Обрабатываю напоминание #{reminder_id} для пользователя {tg_id} (опрос #{survey_id}, этап {stage})")
 
                 # Двойная проверка: отвечал ли пользователь
                 has_response = ReminderModel.check_user_response(survey_id, user_id)
 
                 if has_response:
-                    logger.info(f"✅ Пользователь {tg_id} уже ответил на опрос #{survey_id}, отменяю напоминания")
+                    logger.info(f"Пользователь {tg_id} уже ответил на опрос #{survey_id}, отменяю напоминания")
                     ReminderModel.cancel_user_reminders(survey_id, user_id)
                     skipped_count += 1
                     continue
@@ -229,21 +229,21 @@ class SurveyScheduler:
                     ReminderModel.mark_reminder_sent(reminder_id)
                     sent_count += 1
 
-                    logger.info(f"✅ Напоминание отправлено: опрос #{survey_id}, пользователь #{user_id}, этап {stage}")
+                    logger.info(f"Напоминание отправлено: опрос #{survey_id}, пользователь #{user_id}, этап {stage}")
 
                 except Exception as e:
-                    logger.error(f"❌ Ошибка отправки напоминания #{reminder_id}: {e}")
+                    logger.error(f"Ошибка отправки напоминания #{reminder_id}: {e}")
 
             if sent_count > 0:
-                logger.info(f"✅ Отправлено {sent_count} напоминаний, пропущено {skipped_count}")
+                logger.info(f"Отправлено {sent_count} напоминаний, пропущено {skipped_count}")
             elif pending_reminders:
                 logger.warning(
-                    f"⚠️  НАПОМИНАНИИ ЕСТЬ, НО НЕ ОТПРАВЛЕНЫ: найдено {len(pending_reminders)}, отправлено 0")
+                    f"НАПОМИНАНИИ ЕСТЬ, НО НЕ ОТПРАВЛЕНЫ: найдено {len(pending_reminders)}, отправлено 0")
             else:
-                logger.info(f"ℹ️  Нет напоминаний для отправки")
+                logger.info(f"ℹНет напоминаний для отправки")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка отправки напоминаний: {e}")
+            logger.error(f"Ошибка отправки напоминаний: {e}")
             logger.error(traceback.format_exc())
 
     async def _run_extra_diagnostics(self):
@@ -253,14 +253,14 @@ class SurveyScheduler:
             overdue_reminders = ReminderModel.force_send_overdue_reminders()
 
             if overdue_reminders:
-                logger.warning(f"⚠️  ОБНАРУЖЕНЫ ПРОСРОЧЕННЫЕ НАПОМИНАНИЯ: {len(overdue_reminders)} шт.")
+                logger.warning(f"ОБНАРУЖЕНЫ ПРОСРОЧЕННЫЕ НАПОМИНАНИЯ: {len(overdue_reminders)} шт.")
 
                 # Проверяем статусы опросов
                 survey_ids = set(r['survey_id'] for r in overdue_reminders)
                 logger.info(f"   Опросы с просроченными напоминаниями: {survey_ids}")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка дополнительной диагностики: {e}")
+            logger.error(f"Ошибка дополнительной диагностики: {e}")
 
     async def send_reminder_to_user(self, reminder):
         """Отправка напоминания конкретному пользователю"""
@@ -281,7 +281,7 @@ class SurveyScheduler:
             stage_text = stage_texts.get(stage, "Напоминание об опросе")
 
             message = (
-                f"🔔 {stage_text}\n\n"
+                f"{stage_text}\n\n"
                 f"Вопрос: {question}\n"
                 f"Время опроса: {survey_time.strftime('%d.%m.%Y %H:%M')}\n"
                 f"ID опроса: {survey_id}\n\n"
@@ -295,10 +295,10 @@ class SurveyScheduler:
                 text=message
             )
 
-            logger.info(f"📤 Напоминание отправлено пользователю {tg_id} (опрос #{survey_id}, этап {stage})")
+            logger.info(f"Напоминание отправлено пользователю {tg_id} (опрос #{survey_id}, этап {stage})")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка отправки напоминания пользователю {tg_id}: {e}")
+            logger.error(f"Ошибка отправки напоминания пользователю {tg_id}: {e}")
             raise
 
     async def schedule_survey(self, survey_id: int, send_time: datetime):
@@ -306,7 +306,7 @@ class SurveyScheduler:
         # Отменяем существующую задачу, если есть
         if survey_id in self.scheduled_tasks:
             self.scheduled_tasks[survey_id].cancel()
-            logger.info(f"🔄 Отменена предыдущая задача для опроса #{survey_id}")
+            logger.info(f"Отменена предыдущая задача для опроса #{survey_id}")
 
         # Вычисляем задержку в секундах
         now = datetime.now()
@@ -318,11 +318,11 @@ class SurveyScheduler:
                 self.send_survey_delayed(survey_id, delay, send_time)
             )
             self.scheduled_tasks[survey_id] = task
-            logger.info(f"📅 Опрос #{survey_id} запланирован через {delay:.0f} секунд ({delay / 3600:.1f} часов)")
+            logger.info(f"Опрос #{survey_id} запланирован через {delay:.0f} секунд ({delay / 3600:.1f} часов)")
             return True
         else:
             # Время уже наступило, отправляем немедленно
-            logger.info(f"⏰ Время опроса #{survey_id} уже наступило, отправляю немедленно")
+            logger.info(f"Время опроса #{survey_id} уже наступило, отправляю немедленно")
             await self.send_survey_now(survey_id, send_time)
             return False
 
@@ -330,7 +330,7 @@ class SurveyScheduler:
         """Отправка опроса с задержкой"""
         try:
             # Ждем указанное время
-            logger.info(f"⏳ Ожидание {delay:.0f} секунд для опроса #{survey_id}")
+            logger.info(f"Ожидание {delay:.0f} секунд для опроса #{survey_id}")
             await asyncio.sleep(delay)
 
             # Отправляем опрос
@@ -341,9 +341,9 @@ class SurveyScheduler:
                 del self.scheduled_tasks[survey_id]
 
         except asyncio.CancelledError:
-            logger.info(f"⏹️ Отправка опроса #{survey_id} отменена")
+            logger.info(f"Отправка опроса #{survey_id} отменена")
         except Exception as e:
-            logger.error(f"❌ Ошибка отправки опроса #{survey_id}: {e}")
+            logger.error(f"Ошибка отправки опроса #{survey_id}: {e}")
 
     async def send_survey_now(self, survey_id: int, send_time: datetime = None):
         """Немедленная отправка опроса пользователям"""
@@ -353,7 +353,7 @@ class SurveyScheduler:
             survey = next((s for s in surveys if s['id_survey'] == survey_id), None)
 
             if not survey:
-                logger.error(f"❌ Опрос #{survey_id} не найден")
+                logger.error(f"Опрос #{survey_id} не найден")
                 return
 
             # Если время не передано, используем время из БД
@@ -364,7 +364,7 @@ class SurveyScheduler:
             users = await self.get_target_users(survey)
 
             if not users:
-                logger.warning(f"⚠️ Нет пользователей для опроса #{survey_id}")
+                logger.warning(f"Нет пользователей для опроса #{survey_id}")
                 return
 
             # Отправляем опрос каждому пользователю
@@ -378,7 +378,7 @@ class SurveyScheduler:
                 except Exception as e:
                     failed_count += 1
                     logger.error(
-                        f"❌ Ошибка отправки опроса #{survey_id} пользователю {user.get('user_name', 'Unknown')}: {e}")
+                        f"Ошибка отправки опроса #{survey_id} пользователю {user.get('user_name', 'Unknown')}: {e}")
 
             # Помечаем опрос как отправленный в кэше
             self.sent_surveys_cache.add(survey_id)
@@ -386,10 +386,10 @@ class SurveyScheduler:
             # СОЗДАЕМ НАПОМИНАНИЯ
             await self.create_reminders_for_survey(survey_id, send_time)
 
-            logger.info(f"✅ ОПРОС ОТПРАВЛЕН: #{survey_id} - отправлено {sent_count}, ошибок {failed_count}")
+            logger.info(f"ОПРОС ОТПРАВЛЕН: #{survey_id} - отправлено {sent_count}, ошибок {failed_count}")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка при отправке опроса #{survey_id}: {e}")
+            logger.error(f"Ошибка при отправке опроса #{survey_id}: {e}")
             logger.error(f"Трассировка ошибки: {traceback.format_exc()}")
 
     async def get_target_users(self, survey) -> List[Dict]:
@@ -398,7 +398,7 @@ class SurveyScheduler:
         if survey['role'] is None:
             # Опрос для всех
             users = UserModel.get_all_users_with_tg_id()
-            logger.info(f"👥 Опрос для всех пользователей: найдено {len(users)} пользователей")
+            logger.info(f"Опрос для всех пользователей: найдено {len(users)} пользователей")
             return users
         else:
             # Определяем категорию роли из опроса
@@ -407,10 +407,10 @@ class SurveyScheduler:
             if role_category:
                 # Если опрос для конкретной роли, получаем пользователей по конкретной роли
                 users = UserModel.get_users_by_role(survey['role'])
-                logger.info(f"👥 Опрос для роли '{survey['role']}': найдено {len(users)} пользователей")
+                logger.info(f"Опрос для роли '{survey['role']}': найдено {len(users)} пользователей")
                 return users
             else:
-                logger.error(f"❌ Неизвестная роль в опросе: {survey['role']}")
+                logger.error(f"Неизвестная роль в опросе: {survey['role']}")
                 return []
 
     async def send_survey_to_user(self, user: Dict, survey: Dict):
@@ -418,7 +418,7 @@ class SurveyScheduler:
         tg_id = user['tg_id']
 
         if not tg_id:
-            logger.warning(f"⚠️ User {user.get('user_name', 'Unknown')} has no tg_id")
+            logger.warning(f"User {user.get('user_name', 'Unknown')} has no tg_id")
             return
 
         # Формируем сообщение
@@ -431,14 +431,14 @@ class SurveyScheduler:
         user_name = user.get('user_name', 'Неизвестный пользователь')
 
         message = (
-            f"📊 Новый опрос от руководителя!\n\n"
-            f"❓ Вопрос: {survey['question']}\n"
-            f"👤 Ваша роль: {role_display}\n"
-            f"🎯 Аудитория: {target}\n"
-            f"📅 Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
-            f"🆔 ID опроса: {survey['id_survey']}\n\n"
+            f"Новый опрос от руководителя!\n\n"
+            f"Вопрос: {survey['question']}\n"
+            f"Ваша роль: {role_display}\n"
+            f"Аудитория: {target}\n"
+            f"Дата: {survey['datetime'].strftime('%d.%m.%Y %H:%M')}\n"
+            f"ID опроса: {survey['id_survey']}\n\n"
             f"Чтобы ответить, используйте команду:\n"
-            f"➡️  /response\n\n"
+            f"➡/response\n\n"
             f"Затем выберите этот опрос из списка."
         )
 
@@ -448,9 +448,9 @@ class SurveyScheduler:
                 chat_id=tg_id,
                 text=message
             )
-            logger.debug(f"✅ Survey #{survey['id_survey']} sent to user {user_name} (tg_id: {tg_id})")
+            logger.debug(f"Survey #{survey['id_survey']} sent to user {user_name} (tg_id: {tg_id})")
         except Exception as e:
-            logger.error(f"❌ Error sending to user {user_name} (tg_id: {tg_id}): {e}")
+            logger.error(f"Error sending to user {user_name} (tg_id: {tg_id}): {e}")
             raise
 
     async def periodic_check(self):
@@ -460,7 +460,7 @@ class SurveyScheduler:
         while True:
             try:
                 check_count += 1
-                logger.info(f"🔄 ЦИКЛ ПРОВЕРКИ #{check_count}")
+                logger.info(f"ЦИКЛ ПРОВЕРКИ #{check_count}")
 
                 # Проверяем каждые 30 секунд
                 await asyncio.sleep(SCHEDULER_CHECK_INTERVAL)
@@ -475,7 +475,7 @@ class SurveyScheduler:
                         if survey_id in self.scheduled_tasks:
                             self.scheduled_tasks[survey_id].cancel()
                             del self.scheduled_tasks[survey_id]
-                            logger.info(f"🗑️ Задача для опроса #{survey_id} удалена (опрос не активен)")
+                            logger.info(f"Задача для опроса #{survey_id} удалена (опрос не активен)")
 
                 # Добавляем новые опросы (те, которые были созданы через sendsurvey)
                 for survey in surveys:
@@ -484,42 +484,42 @@ class SurveyScheduler:
 
                     # Если опрос еще не в планировщике и время в будущем
                     if survey_id not in self.scheduled_tasks and survey_id not in self.sent_surveys_cache and survey_time > datetime.now():
-                        logger.info(f"🆕 Обнаружен новый опрос #{survey_id}, планирую отправку на {survey_time}")
+                        logger.info(f"Обнаружен новый опрос #{survey_id}, планирую отправку на {survey_time}")
                         await self.schedule_survey(survey_id, survey_time)
 
                 # 2. Проверяем и отправляем напоминания
                 await self.check_and_send_reminders()
 
-                logger.info(f"✅ ЦИКЛ ПРОВЕРКИ #{check_count} завершен")
+                logger.info(f"ЦИКЛ ПРОВЕРКИ #{check_count} завершен")
 
             except Exception as e:
-                logger.error(f"❌ Ошибка в periodic_check (цикл #{check_count}): {e}")
+                logger.error(f"Ошибка в periodic_check (цикл #{check_count}): {e}")
                 logger.error(traceback.format_exc())
 
     async def add_new_survey(self, survey_id: int, send_time: datetime):
         """Добавление нового опроса в планировщик"""
         now = datetime.now()
 
-        logger.info(f"➕ ДОБАВЛЕН НОВЫЙ ОПРОС: #{survey_id} на {send_time}")
+        logger.info(f"ДОБАВЛЕН НОВЫЙ ОПРОС: #{survey_id} на {send_time}")
 
         # Если время уже прошло, отправляем немедленно
         if send_time <= now:
-            logger.info(f"⏰ Время опроса #{survey_id} уже наступило, отправляю немедленно")
+            logger.info(f"Время опроса #{survey_id} уже наступило, отправляю немедленно")
             await self.send_survey_now(survey_id)
         else:
             # Иначе планируем на будущее
             delay = (send_time - now).total_seconds()
-            logger.info(f"📅 Опрос #{survey_id} запланирован через {delay:.0f} секунд")
+            logger.info(f"Опрос #{survey_id} запланирован через {delay:.0f} секунд")
             await self.schedule_survey(survey_id, send_time)
 
     async def stop(self):
         """Остановка планировщика"""
-        logger.info("🛑 ОСТАНОВКА ПЛАНИРОВЩИКА...")
+        logger.info("ОСТАНОВКА ПЛАНИРОВЩИКА...")
 
         # Отменяем все задачи
         for survey_id, task in list(self.scheduled_tasks.items()):
             task.cancel()
-            logger.info(f"⏹️ Отменена задача для опроса #{survey_id}")
+            logger.info(f"Отменена задача для опроса #{survey_id}")
 
         self.scheduled_tasks.clear()
-        logger.info("✅ Планировщик опросов остановлен")
+        logger.info("Планировщик опросов остановлен")
