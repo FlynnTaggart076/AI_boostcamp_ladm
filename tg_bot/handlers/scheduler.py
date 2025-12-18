@@ -463,7 +463,7 @@ class SurveyScheduler:
                 logger.info(f"🔄 ЦИКЛ ПРОВЕРКИ #{check_count}")
 
                 # Проверяем каждые 30 секунд
-                await asyncio.sleep(30)
+                await asyncio.sleep(60)
 
                 # 1. Проверяем новые опросы
                 surveys = SurveyModel.get_active_surveys()
