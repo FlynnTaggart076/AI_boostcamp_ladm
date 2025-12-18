@@ -1,29 +1,27 @@
-import logging
 import asyncio
+import logging
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes, \
     CallbackQueryHandler
 
-from tg_bot.config.roles_config import get_role_category
-from tg_bot.config.settings import config
 from tg_bot.config.constants import (
     AWAITING_PASSWORD,
     AWAITING_NAME,
     AWAITING_JIRA,
     AWAITING_ROLE, ALLSURVEYS_PAGINATION_PREFIX, ALLSURVEYS_PERIOD_DAYS
 )
+from tg_bot.config.roles_config import get_role_category
+from tg_bot.config.settings import config
+from tg_bot.config.texts import (
+    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS,
+)
 from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.menu_handlers import setup_bot_commands, setup_menu_handlers
 from tg_bot.handlers.pagination_handlers import setup_pagination_handlers
-from tg_bot.handlers.report_handlers import report_command, setup_report_handlers
 from tg_bot.handlers.role_handlers import handle_subtype_selection, handle_category_selection
 from tg_bot.handlers.scheduler import SurveyScheduler
-
-from tg_bot.config.texts import (
-    HELP_TEXTS, format_profile, get_category_display, GENERAL_TEXTS, AUTH_TEXTS,
-)
 from tg_bot.handlers.survey_handlers import finish_response_command
 from tg_bot.services.pagination_utils import PaginationUtils
 

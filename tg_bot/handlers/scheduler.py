@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Set
 from telegram import Bot
 
-from tg_bot.config.constants import REMINDER_INTERVALS
+from tg_bot.config.constants import REMINDER_INTERVALS, SCHEDULER_CHECK_INTERVAL
 from tg_bot.config.roles_config import get_role_category
 from tg_bot.database.connection import db_connection
 from tg_bot.database.models import SurveyModel, UserModel
@@ -463,7 +463,7 @@ class SurveyScheduler:
                 logger.info(f"🔄 ЦИКЛ ПРОВЕРКИ #{check_count}")
 
                 # Проверяем каждые 30 секунд
-                await asyncio.sleep(60)
+                await asyncio.sleep(SCHEDULER_CHECK_INTERVAL)
 
                 # 1. Проверяем новые опросы
                 surveys = SurveyModel.get_active_surveys()

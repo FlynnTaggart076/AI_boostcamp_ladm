@@ -113,9 +113,9 @@ DISPLAY_DATETIME_FORMAT = '%d.%m.%Y %H:%M'
 
 # Настройки напоминаний
 REMINDER_STAGES = {
-    1: 'first_reminder',  # Первое напоминание
-    2: 'second_reminder', # Второе напоминание
-    3: 'final_reminder'   # Финальное напоминание
+    1: 'first_reminder',
+    2: 'second_reminder',
+    3: 'final_reminder'
 }
 
 REMINDER_INTERVALS = {
@@ -125,12 +125,8 @@ REMINDER_INTERVALS = {
 }
 
 # Настройки планировщика
-SCHEDULER_CHECK_INTERVAL = 30  # Интервал проверки в секундах
-SCHEDULER_BATCH_SIZE = 50  # Размер пакета для отправки
+SCHEDULER_CHECK_INTERVAL = 30
 
-# Ограничения для отчетов
-MAX_REPORT_PERIOD_DAYS = 365  # Максимальный период для отчетов
-DEFAULT_REPORT_PERIOD_DAYS = 30  # Период по умолчанию
 
 # Коды ошибок
 ERROR_CODES = {

@@ -29,35 +29,35 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Кнопки для руководителей
         keyboard = [
             [
-                InlineKeyboardButton("📊 Отчеты", callback_data="menu_reports"),
-                InlineKeyboardButton("📝 Опросы", callback_data="menu_surveys")
+                InlineKeyboardButton("Отчеты", callback_data="menu_reports"),
+                InlineKeyboardButton("Опросы", callback_data="menu_surveys")
             ],
             [
-                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
-                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+                InlineKeyboardButton("Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("Дополнить ответ", callback_data="menu_addresponse")
             ],
             [
-                InlineKeyboardButton("🔄 Синхронизация", callback_data="menu_sync"),
-                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile")
+                InlineKeyboardButton("Синхронизация", callback_data="menu_sync"),
+                InlineKeyboardButton("Профиль", callback_data="menu_profile")
             ],
             [
-                InlineKeyboardButton("❓ Помощь", callback_data="menu_help"),
-                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+                InlineKeyboardButton("Помощь", callback_data="menu_help"),
+                InlineKeyboardButton("Закрыть", callback_data="menu_close")
             ]
         ]
     else:
         # Кнопки для всех остальных пользователей
         keyboard = [
             [
-                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
-                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+                InlineKeyboardButton("Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("Дополнить ответ", callback_data="menu_addresponse")
             ],
             [
-                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile"),
-                InlineKeyboardButton("❓ Помощь", callback_data="menu_help")
+                InlineKeyboardButton("Профиль", callback_data="menu_profile"),
+                InlineKeyboardButton("Помощь", callback_data="menu_help")
             ],
             [
-                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+                InlineKeyboardButton("✖Закрыть", callback_data="menu_close")
             ]
         ]
 
@@ -84,31 +84,23 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text("Сначала авторизуйтесь с помощью /start")
         return
 
-    # Простые команды
     simple_commands = {
-        'menu_response': ('ответа на опрос', 'response'),
-        'menu_addresponse': ('дополнения старого ответа', 'addresponse'),
-        'survey_create': ('создания опроса', 'sendsurvey')
+        'menu_response': ('Чтобы ответить на опрос, введите команду:', '/response'),
+        'menu_addresponse': ('Чтобы дополнить старый ответ, введите команду:', '/addresponse'),
+        'survey_create': ('Чтобы создать опрос, введите команду:', '/sendsurvey')
     }
 
     if callback_data in simple_commands:
-        action_name, command = simple_commands[callback_data]
-        if command == 'response':
-            from tg_bot.handlers.survey_handlers import response_command
-            return await response_command(update, context)
-        elif command == 'addresponse':
-            from tg_bot.handlers.addresponse_handlers import addresponse_command
-            return await addresponse_command(update, context)
-        elif command == 'sendsurvey':
-            from tg_bot.handlers.survey_handlers import sendsurvey_command
-            return await sendsurvey_command(update, context)
+        title, command = simple_commands[callback_data]
+        await query.edit_message_text(f"{title}\n\n`{command}`", parse_mode='Markdown')
+        return
 
     # Маппинг callback_data на команды
     command_map = {
         'menu_profile': ('profile', []),
         'menu_help': ('help', []),
         'menu_sync': ('syncjira', []),
-        'menu_reports': ('report', []),  # Объединяем все отчеты в одну команду
+        'menu_reports': ('report', []),
         'survey_list': ('allsurveys', []),
     }
 
@@ -143,7 +135,29 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
             await query.edit_message_text(f"У вас нет доступа к команде {command_name}")
             return
 
-        await handle_menu_command(update, context, command_name, args)
+        # ДЛЯ КОМАНД, КОТОРЫЕ ДОЛЖНЫ ВЫПОЛНЯТЬСЯ (не показывать подсказку)
+        if command_name in ['allsurveys', 'syncjira']:
+            # Эти команды должны выполняться, а не показывать подсказку
+            await handle_menu_command(update, context, command_name, args)
+        else:
+            # Для остальных команд показываем подсказку
+            command_descriptions = {
+                'profile': 'Чтобы посмотреть профиль, введите команду:',
+                'help': 'Чтобы получить справку, введите команду:',
+                'syncjira': 'Чтобы синхронизировать с Jira, введите команду:',
+                'report': 'Чтобы получить отчеты, введите команду:',
+            }
+
+            if command_name in command_descriptions:
+                await query.edit_message_text(
+                    f"{command_descriptions[command_name]}\n\n`/{command_name}`",
+                    parse_mode='Markdown'
+                )
+            else:
+                await query.edit_message_text(
+                    f"Чтобы выполнить это действие, введите команду:\n\n`/{command_name}`",
+                    parse_mode='Markdown'
+                )
     else:
         return
 
@@ -153,7 +167,28 @@ async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Универсальный обработчик команд из меню"""
     query = update.callback_query
 
-    # Маппинг команд на функции
+    # Команды, которые ДОЛЖНЫ ВЫПОЛНЯТЬСЯ, а не показывать подсказку
+    execute_commands = ['allsurveys', 'syncjira', 'profile', 'help']
+
+    if command_name not in execute_commands:
+        # Для остальных команд показываем подсказку
+        command_descriptions = {
+            'sendsurvey': 'Чтобы создать опрос, введите команду:',
+            'response': 'Чтобы ответить на опрос, введите команду:',
+            'addresponse': 'Чтобы дополнить ответ, введите команду:',
+            'report': 'Чтобы получить отчеты, введите команду:',
+        }
+
+        description = command_descriptions.get(command_name,
+                                               f"Чтобы выполнить это действие, введите команду:")
+
+        await query.edit_message_text(
+            f"{description}\n\n`/{command_name}`",
+            parse_mode='Markdown'
+        )
+        return
+
+    # Маппинг команд на функции (для выполнения)
     command_handlers = {
         'profile': 'tg_bot.bot.profile_command',
         'help': 'tg_bot.bot.help_command',
@@ -188,12 +223,22 @@ async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
 
 
-async def show_reports_menu(query):
-    """УПРОЩЕННОЕ меню отчетов - просто показываем сообщение о перенаправлении"""
-    from tg_bot.config.texts import REPORT_TEXTS
+async def survey_create_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик кнопки создания опроса"""
+    query = update.callback_query
+    await query.answer()
+
+    user_role = context.user_data.get('user_role')
+    role_category = get_role_category(user_role) if user_role else None
+
+    if role_category != 'CEO':
+        await query.edit_message_text("Только руководители могут создавать опросы.")
+        return
 
     await query.edit_message_text(
-        REPORT_TEXTS['report_not_available'],
+        "Чтобы создать опрос, введите команду:\n\n"
+        "`/sendsurvey`\n\n"
+        "Эта команда запустит процесс создания и отправки нового опроса.",
         parse_mode='Markdown'
     )
 
@@ -203,35 +248,35 @@ async def show_main_menu(query, role_category):
     if role_category == 'CEO':
         keyboard = [
             [
-                InlineKeyboardButton("📊 Отчеты", callback_data="menu_reports"),
-                InlineKeyboardButton("📝 Опросы", callback_data="menu_surveys")
+                InlineKeyboardButton("Отчеты", callback_data="menu_reports"),
+                InlineKeyboardButton("Опросы", callback_data="menu_surveys")
             ],
             [
-                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
-                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+                InlineKeyboardButton("Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("Дополнить ответ", callback_data="menu_addresponse")
             ],
             [
-                InlineKeyboardButton("🔄 Синхронизация", callback_data="menu_sync"),
-                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile")
+                InlineKeyboardButton("Синхронизация", callback_data="menu_sync"),
+                InlineKeyboardButton("Профиль", callback_data="menu_profile")
             ],
             [
-                InlineKeyboardButton("❓ Помощь", callback_data="menu_help"),
-                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+                InlineKeyboardButton("Помощь", callback_data="menu_help"),
+                InlineKeyboardButton("Закрыть", callback_data="menu_close")
             ]
         ]
     else:
         # Для всех остальных пользователей
         keyboard = [
             [
-                InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
-                InlineKeyboardButton("➕ Дополнить ответ", callback_data="menu_addresponse")
+                InlineKeyboardButton("Ответить на опрос", callback_data="menu_response"),
+                InlineKeyboardButton("Дополнить ответ", callback_data="menu_addresponse")
             ],
             [
-                InlineKeyboardButton("👤 Профиль", callback_data="menu_profile"),
-                InlineKeyboardButton("❓ Помощь", callback_data="menu_help")
+                InlineKeyboardButton("Профиль", callback_data="menu_profile"),
+                InlineKeyboardButton("Помощь", callback_data="menu_help")
             ],
             [
-                InlineKeyboardButton("✖️ Закрыть", callback_data="menu_close")
+                InlineKeyboardButton("✖Закрыть", callback_data="menu_close")
             ]
         ]
 
@@ -249,18 +294,18 @@ async def show_surveys_menu(query):
     """Показать меню опросов"""
     keyboard = [
         [
-            InlineKeyboardButton("➕ Создать опрос", callback_data="survey_create"),
-            InlineKeyboardButton("📋 Просмотреть опросы", callback_data="survey_list")
+            InlineKeyboardButton("Создать опрос", callback_data="survey_create"),
+            InlineKeyboardButton("Просмотреть опросы", callback_data="survey_list")
         ],
         [
-            InlineKeyboardButton("⬅️ Назад", callback_data="menu_back")
+            InlineKeyboardButton("Назад", callback_data="menu_back")
         ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        "📝 **Меню опросов**\n\n"
+        "Меню опросов\n\n"
         "Выберите действие:",
         reply_markup=reply_markup,
         parse_mode='Markdown'
@@ -269,7 +314,6 @@ async def show_surveys_menu(query):
 
 async def setup_bot_commands(application):
     """Настроить команды бота для меню"""
-    # Базовые команды для ВСЕХ (включая неавторизованных)
     base_commands = [
         ("start", "Начать работу с ботом"),
         ("menu", "Открыть меню команд"),
@@ -289,7 +333,6 @@ async def update_user_commands(update: Update, context: ContextTypes.DEFAULT_TYP
     user_role = context.user_data.get('user_role')
 
     if not user_role:
-        # Если пользователь не авторизован, показываем только базовые команды
         commands = [
             ("start", "Начать работу с ботом"),
             ("help", "Показать справку"),
@@ -299,7 +342,6 @@ async def update_user_commands(update: Update, context: ContextTypes.DEFAULT_TYP
         from tg_bot.config.roles_config import get_role_category
         role_category = get_role_category(user_role)
 
-        # Базовые команды для авторизованных
         commands = [
             ("start", "Начать работу с ботом"),
             ("menu", "Открыть меню команд"),
@@ -312,12 +354,11 @@ async def update_user_commands(update: Update, context: ContextTypes.DEFAULT_TYP
         ]
 
         if role_category == 'CEO':
-            # Добавляем команды для руководителей (УБИРАЕМ старые команды отчетов)
             ceo_commands = [
                 ("sendsurvey", "Создать и отправить опрос"),
                 ("allsurveys", "Просмотреть созданные опросы"),
                 ("syncjira", "Синхронизировать данные с Jira"),
-                ("report", "Информация об отчетах"),  # ОДНА команда вместо трех
+                ("report", "Информация об отчетах"),
             ]
             commands.extend(ceo_commands)
 
@@ -336,4 +377,5 @@ def setup_menu_handlers(application):
     application.add_handler(CommandHandler("menu", menu_command))
     application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
     application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^report_"))
+    application.add_handler(CallbackQueryHandler(survey_create_handler, pattern="^survey_create$"))  # Новый обработчик
     application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^survey_"))
