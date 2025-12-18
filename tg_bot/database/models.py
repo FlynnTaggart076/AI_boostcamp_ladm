@@ -1,9 +1,8 @@
-import logging
-
-from psycopg2.extras import RealDictCursor
-
-from tg_bot.config.constants import VALID_ROLES
+from tg_bot.config.roles_config import ALL_ROLES, ROLE_CATEGORIES
+from tg_bot.config.constants import VALID_ROLES, SURVEY_STATUS
 from tg_bot.database.connection import db_connection
+from psycopg2.extras import RealDictCursor
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class UserModel:
 
     @staticmethod
     def register_user(name, telegram_username, tg_id, role, jira_account=None):
-        """Регистрация нового пользователя - ИСПОЛЬЗУЕТСЯ"""
+        """Регистрация нового пользователя - ИСПОЛЬЗУЕТСЯ при регистрации в боте"""
         if role == 'ceo':
             role = 'CEO'
 
@@ -93,17 +92,18 @@ class UserModel:
             else:
                 jira_name = jira_account
 
+        # При регистрации в боте заполняем ВСЕ поля
         query = '''
         INSERT INTO users 
-        (user_name, tg_username, tg_id, role, jira_name, jira_email)  -- ИЗМЕНИТЕ 'name' на 'user_name'
+        (user_name, tg_username, tg_id, role, jira_name, jira_email)
         VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (tg_username) 
         DO UPDATE SET
-            user_name = EXCLUDED.user_name,  -- ИЗМЕНИТЕ 'name' на 'user_name'
+            user_name = EXCLUDED.user_name,
             tg_id = EXCLUDED.tg_id,
             role = EXCLUDED.role,
-            jira_name = EXCLUDED.jira_name,
-            jira_email = EXCLUDED.jira_email
+            jira_name = COALESCE(users.jira_name, EXCLUDED.jira_name),  -- Не перезаписываем существующие Jira данные
+            jira_email = COALESCE(users.jira_email, EXCLUDED.jira_email)  -- Не перезаписываем существующие Jira данные
         RETURNING id_user;
         '''
 
@@ -114,8 +114,9 @@ class UserModel:
         try:
             cursor = connection.cursor()
             cursor.execute(query, (name, telegram_username, tg_id, role, jira_name, jira_email))
+            user_id = cursor.fetchone()[0]
             connection.commit()
-            logger.info(f"Пользователь зарегистрирован: {name} (jira: {jira_name})")
+            logger.info(f"✅ Пользователь зарегистрирован: {name} (Telegram: @{telegram_username})")
             return True
         except Exception as e:
             logger.error(f"Ошибка регистрации пользователя: {e}")
@@ -128,13 +129,15 @@ class UserModel:
     @staticmethod
     def update_existing_jira_user(user_id, telegram_username, tg_id, role, name):
         """Обновление существующего пользователя Jira при регистрации в Telegram"""
+        # Обновляем ТОЛЬКО Telegram данные и имя пользователя, НЕ трогаем jira данные
         query = '''
         UPDATE users 
         SET tg_username = %s, 
             tg_id = %s, 
             role = %s, 
-            user_name = %s  -- ИЗМЕНИТЕ 'name' на 'user_name'
+            user_name = %s
         WHERE id_user = %s
+        AND (tg_username IS NULL OR tg_username = '')  -- Обновляем только если Telegram не привязан
         RETURNING id_user;
         '''
 
@@ -145,10 +148,20 @@ class UserModel:
         try:
             cursor = connection.cursor()
             cursor.execute(query, (telegram_username, tg_id, role, name, user_id))
-            user_id = cursor.fetchone()[0]
+            result = cursor.fetchone()
             connection.commit()
-            logger.info(f"Пользователь Jira обновлен: ID {user_id}")
-            return True
+
+            if result:
+                logger.info(f"✅ Пользователь Jira обновлен: ID {user_id}, имя: {name}")
+                return True
+            else:
+                cursor.execute("SELECT tg_username FROM users WHERE id_user = %s", (user_id,))
+                existing_user = cursor.fetchone()
+                if existing_user and existing_user[0]:
+                    logger.warning(f"Пользователь ID {user_id} уже привязан к Telegram: {existing_user[0]}")
+                else:
+                    logger.warning(f"Пользователь с ID {user_id} не найден или данные не соответствуют")
+                return False
         except Exception as e:
             logger.error(f"Ошибка обновления пользователя Jira: {e}")
             connection.rollback()
@@ -206,14 +219,13 @@ class UserModel:
 
     @staticmethod
     def save_jira_user(jira_user_data):
-        """Сохранение пользователя из Jira с поиском свободных ID"""
+        """Сохранение пользователя из Jira (ТОЛЬКО Jira данные, без user_name)"""
         jira_email = jira_user_data.get('jira_email')
         jira_name = jira_user_data.get('jira_name')
 
         if not jira_email and not jira_name:
             logger.warning("Jira user has no email or name, skipping")
             return None
-
 
         connection = db_connection.get_connection()
         if not connection:
@@ -222,7 +234,7 @@ class UserModel:
         try:
             cursor = connection.cursor()
 
-            # 1. Пытаемся найти существующего пользователя
+            # 1. Пытаемся найти существующего пользователя по jira_email
             existing_user_id = None
 
             if jira_email:
@@ -232,23 +244,30 @@ class UserModel:
                 if result:
                     existing_user_id = result[0]
 
+            # 2. Если не нашли по email, ищем по jira_name (только если email не указан)
             if not existing_user_id and jira_name:
-                check_query = "SELECT id_user FROM users WHERE jira_name = %s AND jira_email IS NULL"
+                check_query = """
+                    SELECT id_user FROM users 
+                    WHERE jira_name = %s 
+                    AND (jira_email IS NULL OR jira_email = '')
+                """
                 cursor.execute(check_query, (jira_name,))
                 result = cursor.fetchone()
                 if result:
                     existing_user_id = result[0]
 
             if existing_user_id:
-                # 2. Обновляем существующего пользователя
+                # 3. Обновляем существующего пользователя (ТОЛЬКО Jira данные)
                 update_fields = []
                 update_values = []
 
-                if jira_name:
+                # Обновляем jira_name только если он не пустой и отличается
+                if jira_name and jira_name.strip():
                     update_fields.append("jira_name = %s")
                     update_values.append(jira_name)
 
-                if jira_email:
+                # Обновляем jira_email только если он не пустой и отличается
+                if jira_email and jira_email.strip():
                     update_fields.append("jira_email = %s")
                     update_values.append(jira_email)
 
@@ -257,10 +276,10 @@ class UserModel:
                     update_query = f"UPDATE users SET {', '.join(update_fields)} WHERE id_user = %s"
                     cursor.execute(update_query, update_values)
 
-                logger.debug(f"Jira user updated: {jira_name or jira_email}")
+                logger.debug(f"Jira user updated: ID {existing_user_id}")
                 user_id = existing_user_id
             else:
-                # 3. Ищем свободный ID
+                # 4. Ищем свободный ID для нового пользователя
                 cursor.execute("""
                     WITH used_ids AS (
                         SELECT id_user FROM users 
@@ -287,25 +306,25 @@ class UserModel:
                 free_id_result = cursor.fetchone()
                 next_id = free_id_result[0] if free_id_result else 1
 
+                # ИСПРАВЛЕННЫЙ ЗАПРОС: сохраняем ТОЛЬКО Jira данные, user_name остается NULL
                 insert_query = """
-                    INSERT INTO users (id_user, jira_name, jira_email, user_name)  -- ДОБАВЬТЕ user_name
-                    VALUES (%s, %s, %s, %s)  -- ДОБАВЬТЕ 4-й параметр
+                    INSERT INTO users (id_user, jira_name, jira_email)
+                    VALUES (%s, %s, %s)
                     ON CONFLICT (id_user) 
                     DO UPDATE SET
-                        jira_name = EXCLUDED.jira_name,
-                        jira_email = EXCLUDED.jira_email,
-                        user_name = EXCLUDED.user_name  -- ДОБАВЬТЕ эту строку
+                        jira_name = COALESCE(EXCLUDED.jira_name, users.jira_name),
+                        jira_email = COALESCE(EXCLUDED.jira_email, users.jira_email)
                     RETURNING id_user;
                     """
 
                 cursor.execute(insert_query, (
                     next_id,
-                    jira_name if jira_name else None,
-                    jira_email if jira_email else None,
-                    jira_name if jira_name else None  # ДОБАВЬТЕ - используем jira_name как user_name
+                    jira_name if jira_name and jira_name.strip() else None,
+                    jira_email if jira_email and jira_email.strip() else None
                 ))
-                user_id = cursor.fetchone()[0]
-                logger.debug(f"Jira user created with ID {next_id}: {jira_name or jira_email}")
+                result = cursor.fetchone()
+                user_id = result[0] if result else next_id
+                logger.debug(f"✅ Jira user created with ID {user_id}: {jira_name or jira_email}")
 
             connection.commit()
             return user_id
@@ -347,7 +366,7 @@ class SurveyModel:
             ))
             survey_id = cursor.fetchone()[0]
             connection.commit()
-            logger.info(f"Опрос создан с ID: {survey_id}")
+            logger.info(f"✅ Опрос создан с ID: {survey_id}")
             return survey_id
         except Exception as e:
             logger.error(f"Ошибка создания опроса: {e}")
@@ -375,6 +394,38 @@ class SurveyModel:
             return [dict(survey) for survey in surveys]
         except Exception as e:
             logger.error(f"Ошибка получения опросов: {e}")
+            return []
+        finally:
+            cursor.close()
+            connection.close()
+
+    @staticmethod
+    def get_surveys_for_role(role):
+        """Получение опросов для определенной роли - ИСПОЛЬЗУЕТСЯ"""
+        if role is None:
+            query = '''
+            SELECT * FROM surveys 
+            WHERE role IS NULL AND state = 'active'
+            ORDER BY datetime DESC;
+            '''
+            params = ()
+        else:
+            query = '''
+            SELECT * FROM surveys 
+            WHERE role = %s AND state = 'active'
+            ORDER BY datetime DESC;
+            '''
+            params = (role,)
+        connection = db_connection.get_connection()
+        if not connection:
+            return []
+        try:
+            cursor = connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, params)
+            surveys = cursor.fetchall()
+            return [dict(survey) for survey in surveys]
+        except Exception as e:
+            logger.error(f"Ошибка получения опросов по роли: {e}")
             return []
         finally:
             cursor.close()
@@ -441,38 +492,6 @@ class SurveyModel:
             cursor.close()
             connection.close()
 
-    @staticmethod
-    def get_surveys_for_role(role):
-        """Получение опросов для определенной роли - ИСПОЛЬЗУЕТСЯ"""
-        if role is None:
-            query = '''
-            SELECT * FROM surveys 
-            WHERE role IS NULL AND state = 'active'
-            ORDER BY datetime DESC;
-            '''
-            params = ()
-        else:
-            query = '''
-            SELECT * FROM surveys 
-            WHERE role = %s AND state = 'active'
-            ORDER BY datetime DESC;
-            '''
-            params = (role,)
-        connection = db_connection.get_connection()
-        if not connection:
-            return []
-        try:
-            cursor = connection.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query, params)
-            surveys = cursor.fetchall()
-            return [dict(survey) for survey in surveys]
-        except Exception as e:
-            logger.error(f"Ошибка получения опросов по роли: {e}")
-            return []
-        finally:
-            cursor.close()
-            connection.close()
-
 
 class ResponseModel:
     """Модель ответов на опросы - ИСПОЛЬЗУЕТСЯ"""
@@ -519,7 +538,7 @@ class ResponseModel:
             connection.commit()
 
             if response_id:
-                logger.info(f"Ответ сохранен: ID {response_id} для опроса #{id_survey}")
+                logger.info(f"✅ Ответ сохранен: ID {response_id} для опроса #{id_survey}")
             else:
                 logger.warning(f"Ответ не сохранен для опроса #{id_survey}")
 
@@ -535,11 +554,11 @@ class ResponseModel:
 
     @staticmethod
     def get_user_response(id_survey, id_user):
-        """Получение ответа пользователя на опрос"""
+        """Получение ответа пользователя на опрос - ИСПОЛЬЗУЕТСЯ"""
         query = '''
-            SELECT * FROM responses 
-            WHERE id_survey = %s AND id_user = %s;
-            '''
+        SELECT * FROM responses 
+        WHERE id_survey = %s AND id_user = %s;
+        '''
         connection = db_connection.get_connection()
         if not connection:
             return None
@@ -554,58 +573,3 @@ class ResponseModel:
         finally:
             cursor.close()
             connection.close()
-
-
-class JiraDataModel:
-    """Универсальная модель для загрузки данных Jira в БД при запуске"""
-
-    @staticmethod
-    def save_project(project_data):
-        """Сохранение проекта в БД - используется только при загрузке"""
-        # TODO: Реализовать сохранение проектов
-        pass
-
-    @staticmethod
-    def save_board(board_data):
-        """Сохранение доски в БД - используется только при загрузке"""
-        # TODO: Реализовать сохранение досок
-        pass
-
-    @staticmethod
-    def save_sprint(sprint_data):
-        """Сохранение спринта в БД - используется только при загрузке"""
-        # TODO: Реализовать сохранение спринтов
-        pass
-
-    @staticmethod
-    def save_task(task_data):
-        """Сохранение задачи в БД - используется только при загрузке"""
-        # TODO: Реализовать сохранение задач
-        pass
-
-
-class BlockerModel:
-    """Модель блокеров (проблем) - НЕ ИСПОЛЬЗУЕТСЯ в текущей версии"""
-
-    @staticmethod
-    def get_blockers_by_date(date):
-        """TODO: Реализовать при необходимости"""
-        return []
-
-
-class DailyDigestModel:
-    """Модель ежедневных дайджестов - НЕ ИСПОЛЬЗУЕТСЯ в текущей версии"""
-
-    @staticmethod
-    def get_daily_digest(date):
-        """TODO: Реализовать при необходимости"""
-        return []
-
-
-class WeekDigestModel:
-    """Модель еженедельных дайджестов - НЕ ИСПОЛЬЗУЕТСЯ в текущей версии"""
-
-    @staticmethod
-    def get_week_digest(start_date, end_date):
-        """TODO: Реализовать при необходимости"""
-        return []

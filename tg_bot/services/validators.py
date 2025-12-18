@@ -14,7 +14,7 @@ class Validator:
 
     # Регулярные выражения
     EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    JIRA_NAME_REGEX = r'^[a-zA-Z0-9._-]+$'
+    JIRA_NAME_REGEX = r'^[a-zA-Zа-яА-ЯёЁ0-9._\s-]+$'  # Разрешает кириллицу и пробелы
     NAME_REGEX = r'^[a-zA-Zа-яА-ЯёЁ\s-]{2,50}$'
     TIME_REGEX = r'^(\d{1,2}):(\d{2})$'
     DATE_REGEXES = [
@@ -42,20 +42,24 @@ class Validator:
         if not jira_account or jira_account.strip() == '':
             return True, ""  # Пустой аккаунт допустим
 
-        jira_account = jira_account.strip().lower()
+        jira_account = jira_account.strip()
 
         # Проверка email
         if '@' in jira_account:
             if not re.match(Validator.EMAIL_REGEX, jira_account):
-                return False, "Неверный формат email"
+                return False, "Неверный формат email. Пример: ivan.ivanov@company.com"
             return True, ""
 
-        # Проверка имени пользователя
+        # Для не-email: проверяем кириллицу, латиницу, цифры, пробелы и основные символы
+        # JIRA_NAME_REGEX разрешает кириллицу и пробелы
         if not re.match(Validator.JIRA_NAME_REGEX, jira_account):
-            return False, "Имя Jira содержит недопустимые символы"
+            return False, "Имя Jira содержит недопустимые символы. Допустимы: буквы, цифры, пробелы, точки, дефисы, подчеркивания"
 
         if len(jira_account) < 3:
             return False, "Имя Jira должно содержать минимум 3 символа"
+
+        if len(jira_account) > 100:
+            return False, "Имя Jira не должно превышать 100 символов"
 
         return True, ""
 
