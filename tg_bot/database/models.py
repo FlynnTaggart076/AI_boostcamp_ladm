@@ -214,6 +214,7 @@ class UserModel:
             logger.warning("Jira user has no email or name, skipping")
             return None
 
+
         connection = db_connection.get_connection()
         if not connection:
             return None
