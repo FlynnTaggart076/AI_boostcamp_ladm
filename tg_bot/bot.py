@@ -17,6 +17,7 @@ from tg_bot.handlers.addresponse_handlers import addresponse_conversation
 from tg_bot.handlers.auth_handlers import start_command, handle_message
 from tg_bot.handlers.menu_handlers import setup_bot_commands, setup_menu_handlers
 from tg_bot.handlers.pagination_handlers import setup_pagination_handlers
+from tg_bot.handlers.report_handlers import report_command, setup_report_handlers
 from tg_bot.handlers.role_handlers import handle_subtype_selection, handle_category_selection
 from tg_bot.handlers.scheduler import SurveyScheduler
 
@@ -349,8 +350,11 @@ def role_required(allowed_categories):
 
 def main():
     """Основная функция запуска бота"""
+    # Создаем application с явным удалением webhook
     application = Application.builder().token(config.BOT_TOKEN).build()
     logger.info("Запуск бота...")
+
+    setup_bot_commands(application)
 
     # Проверка подключения к БД
     logger.info("Проверка подключения к БД...")
@@ -396,9 +400,9 @@ def main():
 
     # Импортируем обработчики
     from tg_bot.handlers.survey_handlers import survey_response_conversation, survey_creation_conversation
-    from tg_bot.handlers.report_handlers import dailydigest_command, weeklydigest_command, blockers_command
     from tg_bot.handlers.role_handlers import setup_role_handlers
-    from tg_bot.handlers.survey_target_handlers import setup_survey_target_handlers  # ДОБАВЛЕНО
+    from tg_bot.handlers.survey_target_handlers import setup_survey_target_handlers
+    from tg_bot.handlers.report_handlers import setup_report_handlers, report_command  # ДОБАВЛЕНО
 
     # Создаем ConversationHandler для регистрации
     from tg_bot.config.constants import AWAITING_SUBROLE
@@ -431,12 +435,15 @@ def main():
     # Настраиваем обработчики выбора ролей
     setup_role_handlers(application)
 
-    # Настраиваем обработчики выбора получателей опроса (ДОБАВЛЕНО)
+    # Настраиваем обработчики выбора получателей опроса
     setup_survey_target_handlers(application)
+
+    # Настраиваем обработчики отчетов
+    setup_report_handlers(application)  # ДОБАВЛЕНО
 
     # РЕГИСТРИРУЕМ ОБРАБОТЧИКИ (порядок важен!)
     application.add_handler(registration_handler)
-    application.add_handler(survey_creation_conversation)  # ДОЛЖЕН БЫТЬ ДО survey_target_handlers
+    application.add_handler(survey_creation_conversation)
     application.add_handler(survey_response_conversation)
     application.add_handler(addresponse_conversation)
 
@@ -449,18 +456,7 @@ def main():
     application.add_handler(CommandHandler("allsurveys", allsurveys_command))
     application.add_handler(CommandHandler("syncjira", syncjira_command))
 
-    @role_required(['CEO'])
-    async def dailydigest_wrapper(update, context):
-        return await dailydigest_command(update, context)
-
-    @role_required(['CEO'])
-    async def weeklydigest_wrapper(update, context):
-        return await weeklydigest_command(update, context)
-
-    @role_required(['CEO'])
-    async def blockers_wrapper(update, context):
-        return await blockers_command(update, context)
-
+    # Обертки для команд с проверкой ролей
     @role_required(['worker', 'CEO'])
     async def response_command_wrapper(update, context):
         from tg_bot.handlers.survey_handlers import response_command
@@ -471,24 +467,33 @@ def main():
         from tg_bot.handlers.addresponse_handlers import addresponse_command
         return await addresponse_command(update, context)
 
-    application.add_handler(CommandHandler("dailydigest", dailydigest_wrapper))
-    application.add_handler(CommandHandler("weeklydigest", weeklydigest_wrapper))
-    application.add_handler(CommandHandler("blockers", blockers_wrapper))
     application.add_handler(CommandHandler("response", response_command_wrapper))
-
     application.add_handler(CommandHandler("addresponse", addresponse_command_wrapper))
     application.add_handler(CommandHandler("done", finish_response_command))
 
-    # Общий обработчик текстовых сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Исправленная строка - используем asyncio.new_event_loop() вместо get_event_loop()
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик неизвестных команд"""
+        command = update.message.text.split()[0] if update.message.text else ""
 
-    # Запускаем бота
+        if command in ['/dailydigest', '/weeklydigest', '/blockers']:
+            return await report_command(update, context)
+
+        await update.message.reply_text(
+            "Неизвестная команда. Используйте /help для списка доступных команд."
+        )
+
+    application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
+
+    # Запускаем бота с более агрессивными параметрами для очистки webhook
     logger.info("Бот готов к работе")
-    application.run_polling(drop_pending_updates=True)
+
+    application.run_polling(
+        drop_pending_updates=True,
+        allowed_updates=Update.ALL_TYPES,
+        close_loop=False
+    )
 
 
 if __name__ == '__main__':

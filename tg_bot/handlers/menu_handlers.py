@@ -26,7 +26,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role_category = get_role_category(user_role)
 
     if role_category == 'CEO':
-        # Кнопки для руководителей (дополнительно к общим)
+        # Кнопки для руководителей
         keyboard = [
             [
                 InlineKeyboardButton("📊 Отчеты", callback_data="menu_reports"),
@@ -46,7 +46,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ]
     else:
-        # Кнопки для всех остальных пользователей (worker и другие)
+        # Кнопки для всех остальных пользователей
         keyboard = [
             [
                 InlineKeyboardButton("📝 Ответить на опрос", callback_data="menu_response"),
@@ -80,11 +80,11 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     user_role = context.user_data.get('user_role')
     role_category = get_role_category(user_role) if user_role else None
 
-    # Проверяем, авторизован ли пользователь
     if not user_role:
         await query.edit_message_text("Сначала авторизуйтесь с помощью /start")
         return
 
+    # Простые команды
     simple_commands = {
         'menu_response': ('ответа на опрос', 'response'),
         'menu_addresponse': ('дополнения старого ответа', 'addresponse'),
@@ -93,7 +93,6 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     if callback_data in simple_commands:
         action_name, command = simple_commands[callback_data]
-        # Вместо редиректа на команду, вызываем обработчик напрямую
         if command == 'response':
             from tg_bot.handlers.survey_handlers import response_command
             return await response_command(update, context)
@@ -104,14 +103,12 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
             from tg_bot.handlers.survey_handlers import sendsurvey_command
             return await sendsurvey_command(update, context)
 
-    # Маппинг callback_data на команды для остальных кнопок
+    # Маппинг callback_data на команды
     command_map = {
         'menu_profile': ('profile', []),
         'menu_help': ('help', []),
         'menu_sync': ('syncjira', []),
-        'report_daily': ('dailydigest', []),
-        'report_weekly': ('weeklydigest', []),
-        'report_blockers': ('blockers', []),
+        'menu_reports': ('report', []),  # Объединяем все отчеты в одну команду
         'survey_list': ('allsurveys', []),
     }
 
@@ -120,12 +117,9 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     elif callback_data == "menu_reports":
-        # Отчеты доступны только руководителям
-        if role_category == 'CEO':
-            await show_reports_menu(query)
-        else:
-            await query.edit_message_text("У вас нет доступа к отчетам.")
-        return
+        # Обработка кнопки отчетов - вызываем report_command
+        from tg_bot.handlers.report_handlers import report_command
+        return await report_command(update, context)
 
     elif callback_data == "menu_surveys":
         # Управление опросами доступно только руководителям
@@ -139,7 +133,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await show_main_menu(query, role_category)
         return
 
-    ceo_only_commands = ['syncjira', 'dailydigest', 'weeklydigest', 'blockers', 'sendsurvey', 'allsurveys']
+    ceo_only_commands = ['syncjira', 'sendsurvey', 'allsurveys', 'report']
 
     if callback_data in command_map:
         command_name, args = command_map[callback_data]
@@ -151,8 +145,6 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
         await handle_menu_command(update, context, command_name, args)
     else:
-        # Если callback_data не из меню, просто игнорируем - его обработают другие обработчики
-        # НЕ делаем await query.edit_message_text() чтобы не мешать другим обработчикам
         return
 
 
@@ -194,6 +186,16 @@ async def handle_menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     except Exception as e:
         logger.error(f"Ошибка выполнения команды {command_name} из меню: {e}")
         await query.edit_message_text(f"Ошибка выполнения команды: {str(e)[:100]}...")
+
+
+async def show_reports_menu(query):
+    """УПРОЩЕННОЕ меню отчетов - просто показываем сообщение о перенаправлении"""
+    from tg_bot.config.texts import REPORT_TEXTS
+
+    await query.edit_message_text(
+        REPORT_TEXTS['report_not_available'],
+        parse_mode='Markdown'
+    )
 
 
 async def show_main_menu(query, role_category):
@@ -243,31 +245,6 @@ async def show_main_menu(query, role_category):
     )
 
 
-async def show_reports_menu(query):
-    """Показать меню отчетов"""
-    keyboard = [
-        [
-            InlineKeyboardButton("📅 Ежедневный дайджест", callback_data="report_daily"),
-            InlineKeyboardButton("📊 Еженедельный дайджест", callback_data="report_weekly")
-        ],
-        [
-            InlineKeyboardButton("🚫 Список блокеров", callback_data="report_blockers")
-        ],
-        [
-            InlineKeyboardButton("⬅️ Назад", callback_data="menu_back")
-        ]
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(
-        "📊 **Меню отчеты**\n\n"
-        "Выберите тип отчета:",
-        reply_markup=reply_markup,
-        parse_mode='Markdown'
-    )
-
-
 async def show_surveys_menu(query):
     """Показать меню опросов"""
     keyboard = [
@@ -292,12 +269,11 @@ async def show_surveys_menu(query):
 
 async def setup_bot_commands(application):
     """Настроить команды бота для меню"""
-    # Базовые команды для ВСЕХ
+    # Базовые команды для ВСЕХ (включая неавторизованных)
     base_commands = [
         ("start", "Начать работу с ботом"),
         ("menu", "Открыть меню команд"),
         ("help", "Показать справку"),
-        ("profile", "Показать профиль"),
         ("cancel", "Отменить текущую операцию"),
     ]
 
@@ -336,14 +312,12 @@ async def update_user_commands(update: Update, context: ContextTypes.DEFAULT_TYP
         ]
 
         if role_category == 'CEO':
-            # Добавляем команды для руководителей
+            # Добавляем команды для руководителей (УБИРАЕМ старые команды отчетов)
             ceo_commands = [
                 ("sendsurvey", "Создать и отправить опрос"),
                 ("allsurveys", "Просмотреть созданные опросы"),
                 ("syncjira", "Синхронизировать данные с Jira"),
-                ("dailydigest", "Ежедневный дайджест"),
-                ("weeklydigest", "Еженедельный дайджест"),
-                ("blockers", "Список блокеров"),
+                ("report", "Информация об отчетах"),  # ОДНА команда вместо трех
             ]
             commands.extend(ceo_commands)
 
